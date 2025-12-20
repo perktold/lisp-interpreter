@@ -19,7 +19,7 @@ static int is_integer(double x) {
         value *val;
 }
 %token <dval> NUMBER
-%token <strval> STRING
+%token <strval> STRING SYMBOL
 %token <ival> LPAREN RPAREN DOT WHITESPACE
 %token <ival> PLUS MINUS MULT DIV
 
@@ -59,6 +59,7 @@ atom:   NUMBER
       }
     }
     |   STRING { $$ = make_string($1); };
+    |   SYMBOL { $$ = make_symbol($1); };
 %%
 
 int yyerror(const char *s) { 
