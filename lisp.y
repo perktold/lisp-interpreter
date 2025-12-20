@@ -20,7 +20,7 @@ static int is_integer(double x) {
 }
 %token <dval> NUMBER
 %token <strval> STRING SYMBOL
-%token <ival> LPAREN RPAREN DOT WHITESPACE
+%token <ival> LPAREN RPAREN DOT
 %token <ival> PLUS MINUS MULT DIV
 
 %type <val> sexpr atom list list_items
@@ -28,27 +28,22 @@ static int is_integer(double x) {
 %start sexprs
 
 %%
-opt_ws: /* matches no whitespace */
-      | WHITESPACE;
-
 sexprs: sexpr { print_val($1); printf("\n"); }
-      | sexprs opt_ws sexpr { print_val($3); printf("\n"); };
+      | sexprs sexpr { print_val($2); printf("\n"); };
 
 sexpr:  atom
      |  list
-     |  LPAREN opt_ws sexpr opt_ws DOT opt_ws sexpr opt_ws RPAREN
+     |  LPAREN sexpr DOT sexpr RPAREN
      {
-       $$ = cons($3, $7);
-       print_val($$);
-       printf("\n");
+       $$ = cons($2, $4);
      };
 
-list: LPAREN opt_ws list_items opt_ws RPAREN
-    { $$ = $3; };
+list: LPAREN list_items RPAREN
+    { $$ = $2; };
 
 list_items: /* empty list */ { $$ = make_nil(); }
-          | sexpr opt_ws list_items { $$ = cons($1, $3); }
-          | sexpr WHITESPACE DOT WHITESPACE sexpr { $$ = cons($1, $5); };
+          | sexpr list_items { $$ = cons($1, $2); }
+          | sexpr DOT sexpr { $$ = cons($1, $3); };
 
 atom:   NUMBER
     {

@@ -7,7 +7,7 @@ int tcnt = 0;
 %}
 
 %%
-[[:space:]]+      { printf("%d: WHITESPACE\n", ++tcnt); return WHITESPACE; }
+[[:space:]]+      { printf("%d: WHITESPACE\n", tcnt); /*ignore whitespace*/}
 "("             { printf("%d: LPAREN\n", ++tcnt); return LPAREN; }
 ")"             { printf("%d: RPAREN\n", ++tcnt); return RPAREN; }
 "\."            { printf("%d: DOT\n", ++tcnt); return DOT; }
@@ -31,7 +31,7 @@ int tcnt = 0;
                 return STRING;
                 }
 
-[^[:space:]\"()]+ {
+[^[:space:]\"().]+ {
                 yylval.strval = strdup(yytext);
                 printf("%d: SYMBOL: %s\n", ++tcnt, yylval.strval);
                 return SYMBOL;
