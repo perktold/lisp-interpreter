@@ -1,0 +1,7 @@
+* Lisp Interpreter
+using lex and yacc
+
+** Resources:
++ [[https://github.com/AdhamAfis/yacc-parser-tutorial][yacc-parser-tutorial]]
++ [[https://en.wikipedia.org/wiki/S-expression][s-expressions]]
++ [[https://www.bowaggoner.com/writeups/jumpstart/flexbison/jumpstart_flexbison.pdf?utm_source][flex / bison jumpstart]]
