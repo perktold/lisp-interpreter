@@ -87,7 +87,7 @@ int main(void) {
     char* line;
     while ((line = readline("λ > ")) != NULL) {
         if (*line) add_history(line);
-        yy_scan_string(line); // feed input to Flex/Bison
+        yy_scan_string(line);
         yyparse();
         free(line);
     }

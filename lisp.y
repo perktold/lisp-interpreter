@@ -23,7 +23,7 @@ static int is_integer(double x) {
 %token <ival> LPAREN RPAREN DOT WHITESPACE
 %token <ival> PLUS MINUS MULT DIV
 
-%type <val> sexpr atom sexprs
+%type <val> sexpr atom
 
 %start sexprs
 
@@ -31,8 +31,8 @@ static int is_integer(double x) {
 opt_ws: /* matches no whitespace */
       | WHITESPACE;
 
-sexprs: sexpr
-      | sexprs opt_ws sexpr;
+sexprs: sexpr { print_val($1); printf("\n"); }
+      | sexprs opt_ws sexpr { print_val($3); };
 
 sexpr:  atom
      |  LPAREN opt_ws sexpr opt_ws DOT opt_ws sexpr opt_ws RPAREN

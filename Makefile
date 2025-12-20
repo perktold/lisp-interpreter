@@ -3,6 +3,7 @@ YACC    = bison
 CC      = gcc -g
 CFLAGS  = -DYYDEBUG=1
 LIBS    = -lreadline -lfl -lm
+.SUFFIXES:
 
 lisp: lisp.c lisp.tab.o lex.yy.o
 	$(CC) $(CFLAGS) -o $@ lisp.c lisp.tab.o lex.yy.o $(LIBS)
