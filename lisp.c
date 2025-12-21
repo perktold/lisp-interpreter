@@ -70,8 +70,7 @@ value *car(value *cons) {
 		return cons->as.pair.car;
 	}
 	printf("not a pair: ");
-	print_value(cons);
-	printf("\n");
+	println_value(cons);
 	return make_nil();
 }	
 
@@ -80,11 +79,14 @@ value *cdr(value *cons) {
 		return cons->as.pair.cdr;
 	}
 	printf("not a pair: ");
-	print_value(cons);
-	printf("\n");
+	println_value(cons);
 	return make_nil();
 }	
 
+void *println_value(value *val){
+	print_value(val);
+	printf("\n");
+}
 void *print_value(value *val){
 	char *str;
 	switch (val->type) {
@@ -93,7 +95,7 @@ void *print_value(value *val){
 			break;
 
 		case VT_DOUBLE:
-			printf("%f", val->as.d);
+			printf("%g", val->as.d);
 			break;
 
 		case VT_SYMBOL:
@@ -186,9 +188,9 @@ value *env_lookup(env *e, const char *sym) {
 }
 
 value *eval(env *e, value *v) {
-	printf("evaluating: ");
-	print_value(v);
-	printf("\n");
+	//printf("evaluating: ");
+	//print_value(v);
+	//printf("\n");
 
 	if (v->type == VT_NIL) {
 		return v;
@@ -225,8 +227,7 @@ value *eval_pair(env *e, value *v) {
 
 		if (defname->type != VT_SYMBOL) {
 			printf("error, expected symbol, found: ");
-			print_value(defname);
-			printf("\n");
+			println_value(defname);
 			return v;
 		}
 		env_define(e, defname->as.sym, defval);
@@ -250,6 +251,12 @@ value *eval_pair(env *e, value *v) {
 			return eval(e, car(cdr(cdr(tail))));
 		}
 		return make_nil();
+	}
+
+	if (head->type == VT_SYMBOL && !strcmp(head->as.sym, "print")) {
+		value *v = eval(e, car(tail));
+		println_value(v);
+		return v;
 	}
 
 	value *head_eval = eval(e, head);
@@ -281,7 +288,7 @@ value *apply(value *lval, value *args) {
 
 value *builtin_cons(env *e, value *args) {
 	value *v = eval(e, car(args));
-	return cons(v, car(cdr(args)));
+	return cons(v, eval(e, car(cdr(args))));
 }
 
 value *builtin_car(env *e, value *args) {
@@ -309,8 +316,7 @@ value *apply_to_nums(env *e, value *args, double (*fn)(double, double)) {
 		result = v->as.d;
 	} else {
 		printf("not a number: ");
-		print_value(v);
-		printf("\n");
+		println_value(v);
 		return make_nil();
 	}
 
@@ -323,8 +329,7 @@ value *apply_to_nums(env *e, value *args, double (*fn)(double, double)) {
 			result = fn(result, v->as.d);
 		} else {
 			printf("not a number: ");
-			print_value(v);
-			printf("\n");
+			println_value(v);
 			return make_nil();
 		}
 		args = cdr(args);
@@ -366,8 +371,7 @@ value *builtin_le(env *e, value *args) {
 		prev_num = v->as.d;
 	} else {
 		printf("not a number: ");
-		print_value(v);
-		printf("\n");
+		println_value(v);
 		return make_nil();
 	}
 
@@ -381,8 +385,7 @@ value *builtin_le(env *e, value *args) {
 			cur_num = v->as.d;
 		} else {
 			printf("not a number: ");
-			print_value(v);
-			printf("\n");
+			println_value(v);
 			return make_nil();
 		}
 		if(prev_num > cur_num) {
