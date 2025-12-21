@@ -1,15 +1,10 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 #include "lisp.h"
 
 int yylex(void);
 int yyerror(const char *s);
-
-static int is_integer(double x) {
-    return floor(x) == x && isfinite(x);
-}
 %}
 
 %union {

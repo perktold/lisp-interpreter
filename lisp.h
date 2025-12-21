@@ -11,7 +11,8 @@ typedef enum {
 	VT_STRING,
 	VT_NIL,
 	VT_PAIR,
-	VT_LAMBDA
+	VT_LAMBDA,
+	VT_BUILTIN
 } val_type;
 
 struct value {
@@ -30,6 +31,9 @@ struct value {
 			value *body;
 			env *env;
 		} lambda;
+		struct {
+			value *(*fn) (env *, value *);
+		} builtin;
 	} as;
 };
 
@@ -39,6 +43,7 @@ value *make_symbol(const char *sym);
 value *make_string(const char *str);
 value *make_nil();
 value *make_lambda(env *e, value *params, value *body);
+value *make_builtin(value *(*fn) (env *, value *));
 value *cons(value *car, value *cdr);
 value *car(value *cons);
 value *cdr(value *cons);
@@ -63,5 +68,17 @@ value *eval(env *e, value *val);
 value *eval_pair(env *e, value *val);
 
 value *apply(value *lambda, value *args);
+
+value *builtin_cons(env *e, value *args);
+value *builtin_car(env *e, value *args);
+value *builtin_cdr(env *e, value *args);
+value *builtin_isnull(env *e, value *args);
+value *builtin_add(env *e, value *args);
+value *builtin_sub(env *e, value *args);
+value *builtin_mul(env *e, value *args);
+value *builtin_div(env *e, value *args);
+value *builtin_le(env *e, value *args);
+
+int is_integer(double x);
 
 #endif

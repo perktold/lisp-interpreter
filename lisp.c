@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <math.h>
 #include "lisp.h"
 #include "lex.yy.h"
 #include "lisp.tab.h"
@@ -41,18 +42,19 @@ value *make_nil() {
 }
 
 value *make_lambda(env *e, value *params, value *body) {
-	printf("making lambda:\n");
 	value *l = malloc(sizeof(value));
 	l->type = VT_LAMBDA;
 	l->as.lambda.params = params;
-	printf("params: ");
-	print_value(params);
 	l->as.lambda.body = body;
-	printf("\nbody: ");
-	print_value(body);
-	printf("\n");
 	l->as.lambda.env = e;
 	return l;
+}
+
+value *make_builtin(value *(*fn) (env *, value *)){
+	value *val = malloc(sizeof(value));
+	val->type = VT_BUILTIN;
+	val->as.builtin.fn = fn;
+	return val;
 }
 
 value *cons(value *car, value *cdr) {
@@ -98,10 +100,26 @@ void *print_value(value *val){
 			break;
 
 		case VT_PAIR:
+			// DOTTED:
+			//printf("(");
+			//print_value(val->as.pair.car);
+			//printf(" . ");
+			//print_value(val->as.pair.cdr);
+			//printf(")");
+			
+			// LISTS:
 			printf("(");
-			print_value(val->as.pair.car);
-			printf(" . ");
-			print_value(val->as.pair.cdr);
+			print_value(car(val));
+			value *p_cdr = cdr(val);
+			while (p_cdr->type == VT_PAIR) {
+				printf(" ");
+				print_value(car(p_cdr));
+				p_cdr = cdr(p_cdr);
+			}
+			if(p_cdr->type != VT_NIL) {
+				printf(" . ");
+				print_value(p_cdr);
+			}
 			printf(")");
 			break;
 
@@ -111,7 +129,13 @@ void *print_value(value *val){
 			printf(" ");
 			print_value(val->as.lambda.body);
 			printf(")");
+			break;
+
+		case VT_BUILTIN:
+			printf("<builtin>\n");
+			break;
 		default:
+			printf("<unknown>\n");
 	}
 
 	return val;
@@ -153,24 +177,25 @@ value *env_lookup(env *e, const char *sym) {
 }
 
 value *eval(env *e, value *v) {
-	value *found;
+	printf("evaluating: ");
+	print_value(v);
+	printf("\n");
 
 	if (v->type == VT_NIL) {
 		return v;
 	}
 
-	if (v->type == VT_SYMBOL &&
-		(found = env_lookup(e, v->as.sym))) {
-		return found;
+	if (v->type == VT_PAIR) {
+		return eval_pair(e, v);
 	}
 
 	if (v->type == VT_SYMBOL) {
-		printf("symbol %s not found\n", v->as.sym);
-		return v;
-	}
-
-	if (v->type == VT_PAIR) {
-		return eval_pair(e, v);
+		value *found = env_lookup(e, v->as.sym);
+		if (!found) {
+			printf("symbol %s not found\n", v->as.sym);
+			return make_nil();
+		}
+		return found;
 	}
 
 	return v;
@@ -180,13 +205,11 @@ value *eval_pair(env *e, value *v) {
 	value *head = car(v);
 	value *tail = cdr(v);
 
-	value *head_eval = eval(e, head);
-
-	if (head_eval->type == VT_LAMBDA) {
-		apply(head_eval, tail);
+	if (head->type == VT_SYMBOL && !strcmp(head->as.sym, "quote")) {
+		return car(tail);
 	}
 
-	if (!strcmp(head->as.str, "define")) {
+	if (head->type == VT_SYMBOL && !strcmp(head->as.sym, "define")) {
 		value *defargs = tail;
 		value *defname = car(defargs);
 		value *defval = eval(e, car(cdr(defargs)));
@@ -198,16 +221,37 @@ value *eval_pair(env *e, value *v) {
 			return v;
 		}
 		env_define(e, defname->as.sym, defval);
+		return defval;
 	}
 
-	if (!strcmp(head->as.str, "lambda") ||
-	    !strcmp(head->as.str, "\\") ||
-	    !strcmp(head->as.str, "λ")) {
+	if (head->type == VT_SYMBOL && (!strcmp(head->as.sym, "lambda") ||
+		!strcmp(head->as.sym, "\\") ||
+		!strcmp(head->as.sym, "λ"))) {
 		value *params = car(tail);
 		value *body = car(cdr(tail));
 
 		return make_lambda(e, params, body);
 	}
+
+	if (head->type == VT_SYMBOL && !strcmp(head->as.sym, "if")) {
+		value *test = eval(e, car(tail));
+		if(test->type != VT_NIL) {
+			return eval(e, car(cdr(tail)));
+		} else {
+			return eval(e, car(cdr(cdr(tail))));
+		}
+		return make_nil();
+	}
+
+	value *head_eval = eval(e, head);
+	if (head_eval->type == VT_BUILTIN) {
+		return head_eval->as.builtin.fn(e, tail);
+	}
+
+	if (head_eval->type == VT_LAMBDA) {
+		return apply(head_eval, tail);
+	}
+
 	return v;
 }
 
@@ -224,4 +268,123 @@ value *apply(value *lval, value *args) {
 		arg = cdr(arg);
 	}
 	return eval(sub_env, lval->as.lambda.body);
+}
+
+value *builtin_cons(env *e, value *args) {
+	value *v = eval(e, car(args));
+	return cons(v, car(cdr(args)));
+}
+
+value *builtin_car(env *e, value *args) {
+	return car(eval(e, car(args)));
+}
+
+value *builtin_cdr(env *e, value *args) {
+	return cdr(eval(e, car(args)));
+}
+
+value *builtin_isnull(env *e, value *args) {
+	value *v = eval(e, car(args));
+	if(v->type == VT_NIL) {
+		return make_int(1);
+	}
+	return make_nil();
+}
+
+value *apply_to_nums(env *e, value *args, double (*fn)(double, double)) {
+	double result;
+	value *v = eval(e, car(args));
+	if (v->type == VT_INT) {
+		result = v->as.i;
+	} else if (v->type == VT_DOUBLE) {
+		result = v->as.d;
+	} else {
+		printf("not a number: ");
+		print_value(v);
+		printf("\n");
+		return make_nil();
+	}
+
+	args = cdr(args);
+	while (args->type == VT_PAIR) {
+		v = eval(e, car(args));
+		if (v->type == VT_INT) {
+			result = fn(result, v->as.i);
+		} else if (v->type == VT_DOUBLE) {
+			result = fn(result, v->as.d);
+		} else {
+			printf("not a number: ");
+			print_value(v);
+			printf("\n");
+			return make_nil();
+		}
+		args = cdr(args);
+	}
+
+	if(is_integer(result)){
+		return make_int((int) result);
+	}
+	return make_double(result);
+}
+
+double add_fn(double x, double y) { return x+y; }
+value *builtin_add(env *e, value *args) {
+	return apply_to_nums(e, args, add_fn);
+}
+
+double sub_fn(double x, double y) { return x-y; }
+value *builtin_sub(env *e, value *args) {
+	return apply_to_nums(e, args, sub_fn);
+}
+
+double mul_fn(double x, double y) { return x*y; }
+value *builtin_mul(env *e, value *args) {
+	return apply_to_nums(e, args, mul_fn);
+}
+
+double div_fn(double x, double y) { return x/y; }
+value *builtin_div(env *e, value *args) {
+	return apply_to_nums(e, args, div_fn);
+}
+
+value *builtin_le(env *e, value *args) {
+	double prev_num;
+	value *v = eval(e, car(args));
+
+	if (v->type == VT_INT) {
+		prev_num = v->as.i;
+	} else if (v->type == VT_DOUBLE) {
+		prev_num = v->as.d;
+	} else {
+		printf("not a number: ");
+		print_value(v);
+		printf("\n");
+		return make_nil();
+	}
+
+	args = cdr(args);
+	while (args->type == VT_PAIR) {
+		v = eval(e, car(args));
+		double cur_num;
+		if (v->type == VT_INT) {
+			cur_num = v->as.i;
+		} else if (v->type == VT_DOUBLE) {
+			cur_num = v->as.d;
+		} else {
+			printf("not a number: ");
+			print_value(v);
+			printf("\n");
+			return make_nil();
+		}
+		if(prev_num > cur_num) {
+			return make_nil();
+		}
+		prev_num = cur_num;
+		args = cdr(args);
+	}
+	return make_int(1);
+}
+
+int is_integer(double x) {
+    return floor(x) == x && isfinite(x);
 }
