@@ -8,41 +8,56 @@
 
 value *make_int(int i) {
 	value *val = malloc(sizeof(value));
-	val->type = VALTYPE_INT;
+	val->type = VT_INT;
 	val->as.i = i;
 	return val;
 }
 
 value *make_double(double d) {
 	value *val = malloc(sizeof(value));
-	val->type = VALTYPE_DOUBLE;
+	val->type = VT_DOUBLE;
 	val->as.d = d;
 	return val;
 }
 
 value *make_symbol(const char *s) {
 	value *val = malloc(sizeof(value));
-	val->type = VALTYPE_SYMBOL;
+	val->type = VT_SYMBOL;
 	val->as.sym = s;
 	return val;
 }
 
 value *make_string(const char *s) {
 	value *val = malloc(sizeof(value));
-	val->type = VALTYPE_STRING;
+	val->type = VT_STRING;
 	val->as.str = s;
 	return val;
 }
 
 value *make_nil() {
 	value *val = malloc(sizeof(value));
-	val->type = VALTYPE_NIL;
+	val->type = VT_NIL;
 	return val;
+}
+
+value *make_lambda(env *e, value *params, value *body) {
+	printf("making lambda:\n");
+	value *l = malloc(sizeof(value));
+	l->type = VT_LAMBDA;
+	l->as.lambda.params = params;
+	printf("params: ");
+	print_value(params);
+	l->as.lambda.body = body;
+	printf("\nbody: ");
+	print_value(body);
+	printf("\n");
+	l->as.lambda.env = e;
+	return l;
 }
 
 value *cons(value *car, value *cdr) {
 	value *val = malloc(sizeof(value));
-	val->type = VALTYPE_PAIR;
+	val->type = VT_PAIR;
 	val->as.pair.car = car;
 	val->as.pair.cdr = cdr;
 	return val;
@@ -62,31 +77,39 @@ value *cdr(value *cons) {
 void *print_value(value *val){
 	char *str;
 	switch (val->type) {
-		case VALTYPE_INT:
+		case VT_INT:
 			printf("%d", val->as.i);
 			break;
 
-		case VALTYPE_DOUBLE:
+		case VT_DOUBLE:
 			printf("%f", val->as.d);
 			break;
 
-		case VALTYPE_SYMBOL:
+		case VT_SYMBOL:
 			printf("%s", val->as.sym);
 			break;
 
-		case VALTYPE_STRING:
+		case VT_STRING:
 			printf("\"%s\"", val->as.str);
 			break;
 
-		case VALTYPE_NIL:
+		case VT_NIL:
 			printf("()");
 			break;
 
-		case VALTYPE_PAIR:
+		case VT_PAIR:
 			printf("(");
 			print_value(val->as.pair.car);
 			printf(" . ");
 			print_value(val->as.pair.cdr);
+			printf(")");
+			break;
+
+		case VT_LAMBDA:
+			printf("(λ ");
+			print_value(val->as.lambda.params);
+			printf(" ");
+			print_value(val->as.lambda.body);
 			printf(")");
 		default:
 	}
@@ -132,21 +155,21 @@ value *env_lookup(env *e, const char *sym) {
 value *eval(env *e, value *v) {
 	value *found;
 
-	if (v->type == VALTYPE_NIL) {
+	if (v->type == VT_NIL) {
 		return v;
 	}
 
-	if (v->type == VALTYPE_SYMBOL &&
+	if (v->type == VT_SYMBOL &&
 		(found = env_lookup(e, v->as.sym))) {
 		return found;
 	}
 
-	if (v->type == VALTYPE_SYMBOL) {
+	if (v->type == VT_SYMBOL) {
 		printf("symbol %s not found\n", v->as.sym);
 		return v;
 	}
 
-	if (v->type == VALTYPE_PAIR) {
+	if (v->type == VT_PAIR) {
 		return eval_pair(e, v);
 	}
 
@@ -154,24 +177,51 @@ value *eval(env *e, value *v) {
 }
 
 value *eval_pair(env *e, value *v) {
-	value *head = v->as.pair.car;
-	value *tail = v->as.pair.cdr;
+	value *head = car(v);
+	value *tail = cdr(v);
 
-	if (head->type == VALTYPE_SYMBOL &&
-	    tail->type == VALTYPE_PAIR) {
-		if(!strcmp(head->as.str, "define")) {
-			value *defargs = cdr(v);
-			value *defname = car(defargs);
-			value *defval = eval(e, car(cdr(defargs)));
+	value *head_eval = eval(e, head);
 
-			if (defname->type != VALTYPE_SYMBOL) {
-				printf("error, expected symbol, found: ");
-				print_value(defname);
-				printf("\n");
-				return v;
-			}
-			env_define(e, defname->as.sym, defval);
+	if (head_eval->type == VT_LAMBDA) {
+		apply(head_eval, tail);
+	}
+
+	if (!strcmp(head->as.str, "define")) {
+		value *defargs = tail;
+		value *defname = car(defargs);
+		value *defval = eval(e, car(cdr(defargs)));
+
+		if (defname->type != VT_SYMBOL) {
+			printf("error, expected symbol, found: ");
+			print_value(defname);
+			printf("\n");
+			return v;
 		}
+		env_define(e, defname->as.sym, defval);
+	}
+
+	if (!strcmp(head->as.str, "lambda") ||
+	    !strcmp(head->as.str, "\\") ||
+	    !strcmp(head->as.str, "λ")) {
+		value *params = car(tail);
+		value *body = car(cdr(tail));
+
+		return make_lambda(e, params, body);
 	}
 	return v;
+}
+
+value *apply(value *lval, value *args) {
+	env *sub_env = env_create(lval->as.lambda.env);
+	value *params = lval->as.lambda.params;
+	value *arg = args;
+
+	while (params->type == VT_PAIR && arg->type == VT_PAIR) {
+		env_define(sub_env,
+			   car(params)->as.sym,
+			   eval(lval->as.lambda.env, car(arg)));
+		params = cdr(params);
+		arg = cdr(arg);
+	}
+	return eval(sub_env, lval->as.lambda.body);
 }

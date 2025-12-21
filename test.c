@@ -22,7 +22,7 @@ env *global_env = NULL;
 
 void test_make_int() {
 	value *v = make_int(42);
-	ASSERT(v->type == VALTYPE_INT, "make_int sets type");
+	ASSERT(v->type == VT_INT, "make_int sets type");
 	ASSERT(v->as.i == 42, "make_int sets value");
 }
 
@@ -31,7 +31,7 @@ void test_cons_car_cdr() {
 	value *b = make_int(2);
 	value *p = cons(a, b);
 
-	ASSERT(p->type == VALTYPE_PAIR, "cons creates pair");
+	ASSERT(p->type == VT_PAIR, "cons creates pair");
 	ASSERT(car(p)->as.i == 1, "car works");
 	ASSERT(cdr(p)->as.i == 2, "cdr works");
 }
