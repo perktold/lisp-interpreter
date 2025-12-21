@@ -175,21 +175,3 @@ value *eval_pair(env *e, value *v) {
 	}
 	return v;
 }
-
-env *global_env = NULL;
-
-int main(void) {
-	// init global env
-	global_env = env_create(NULL);
-	// START REPL
-	char* line;
-	while ((line = readline("λ > ")) != NULL) {
-		if (*line) {
-			add_history(line);
-		}
-		yy_scan_string(line);
-		yyparse();
-		free(line);
-	}
-	return 0;
-}

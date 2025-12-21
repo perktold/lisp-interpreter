@@ -3,15 +3,19 @@ YACC    = bison
 CC      = gcc -g
 CFLAGS  = -DYYDEBUG=1
 LIBS    = -lreadline -lfl -lm
+OBJS	= lisp.o lisp.tab.o lex.yy.o
 .SUFFIXES:
 
-lisp: lisp.c lisp.tab.o lex.yy.o
-	$(CC) $(CFLAGS) -o $@ lisp.c lisp.tab.o lex.yy.o $(LIBS)
+main: main.c $(OBJS)
+	$(CC) $(CFLAGS) -o $@ main.c $(OBJS) $(LIBS)
+
+lisp.o: lisp.c lisp.h lex.yy.o
+	$(CC) $(CFLAGS) -c lisp.c
 
 lisp.tab.c lisp.tab.h: lisp.y
 	$(YACC) -d lisp.y
 
-lex.yy.c: lisp.l lisp.tab.h
+lex.yy.c lex.yy.h: lisp.l lisp.tab.h
 	$(LEX) --header-file=lex.yy.h lisp.l
 
 lisp.tab.o: lisp.tab.c
@@ -21,6 +25,16 @@ lex.yy.o: lex.yy.c
 	$(CC) $(CFLAGS) -c lex.yy.c
 
 clean:
-	rm -f *.o lisp lisp.tab.c lisp.tab.h lex.yy.c lex.yy.h
+	rm -f *.o main test lisp.tab.c lisp.tab.h lex.yy.c lex.yy.h
 
-.PHONY: clean
+test: test.o $(OBJS)
+	$(CC) $(CFLAGS) -o $@ test.o $(OBJS) $(LIBS)
+	./test
+	
+test.o: test.c lisp.h lex.yy.o
+	$(CC) $(CFLAGS) -c test.c
+
+run: main
+	./main
+
+.PHONY: clean test run

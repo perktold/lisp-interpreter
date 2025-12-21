@@ -1,3 +1,4 @@
+*.o
 lex.yy.*
 lisp.tab.*
-lisp
+main
