@@ -15,40 +15,36 @@ int yyerror(const char *s);
 }
 %token <dval> NUMBER
 %token <strval> STRING SYMBOL
-%token <ival> LPAREN RPAREN DOT
-%token <ival> PLUS MINUS MULT DIV
+%token <ival> LPAREN RPAREN DOT QUOTE
 
-%type <val> sexpr atom list list_items
+%type <val> expr atom list list_items
 
-%start sexprs
+%start exprs
 
 %%
-sexprs: sexpr
+exprs: expr
       {
         value *v = eval(global_env, $1);
         printf(";> ");
         println_value(v);
       }
-      | sexprs sexpr
+      | exprs expr
       {
         value *v = eval(global_env, $2);
         printf(";> ");
         println_value(v);
       };
 
-sexpr:  atom
-     |  list
-     |  LPAREN sexpr DOT sexpr RPAREN
-     {
-       $$ = cons($2, $4);
-     };
+expr:  atom
+     | list
+     | LPAREN expr DOT expr RPAREN { $$ = cons($2, $4); }
+     | QUOTE expr { $$ = cons(make_symbol("quote"), cons($2, make_nil())); };
 
-list: LPAREN list_items RPAREN
-    { $$ = $2; };
+list: LPAREN list_items RPAREN { $$ = $2; };
 
 list_items: /* empty list */ { $$ = make_nil(); }
-          | sexpr list_items { $$ = cons($1, $2); }
-          | sexpr DOT sexpr { $$ = cons($1, $3); };
+          | expr list_items { $$ = cons($1, $2); }
+          | expr DOT expr { $$ = cons($1, $3); };
 
 atom:   NUMBER
     {

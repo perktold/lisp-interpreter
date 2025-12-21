@@ -9,9 +9,10 @@ int tcnt = 0;
 %%
 [[:space:]]+    { /* ignore whitespace */ }
 ";"[^\n]*       { /* ignore comment */   }
-"("             {  return LPAREN; }
-")"             {  return RPAREN; }
-"\."            {  return DOT; }
+"("             { return LPAREN; }
+")"             { return RPAREN; }
+"\."            { return DOT; }
+"'"             { return QUOTE; }
 
 [+-]?([0-9]+|([0-9]*\.[0-9]+))([eE][-+]?[0-9]+)? {
                 yylval.dval = atof(yytext);
@@ -32,7 +33,7 @@ int tcnt = 0;
                 return STRING;
                 }
 
-[^[:space:]\"().]+ {
+[^[:space:]\"()'.]+ {
                 yylval.strval = strdup(yytext);
                 
                 return SYMBOL;

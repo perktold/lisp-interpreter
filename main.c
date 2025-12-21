@@ -6,10 +6,26 @@
 #include "lex.yy.h"
 #include "lisp.tab.h"
 
-
 env *global_env = NULL;
 
-int main(void) {
+
+void eval_file(const char *filename) {
+	FILE *f = fopen(filename, "r");
+	if (!f) {
+		fprintf(stderr, "could not open file: %s\n", filename);
+		return;
+	}
+
+	char line[1024];
+	while (fgets(line, sizeof(line), f)) {
+		if (*line == '\n' || *line == ';') continue; // skip empty lines or comments
+		yy_scan_string(line);
+		yyparse();
+	}
+	fclose(f);
+}
+
+int main(int argc, char **argv) {
 	// init global env
 	global_env = env_create(NULL);
 	env_define(global_env, "cons", make_builtin(builtin_cons));
@@ -21,6 +37,12 @@ int main(void) {
 	env_define(global_env, "*", make_builtin(builtin_mul));
 	env_define(global_env, "/", make_builtin(builtin_div));
 	env_define(global_env, "<=", make_builtin(builtin_le));
+
+	// evaluate files
+	for(int i = 1; i < argc; i++) {
+		eval_file(argv[i]);
+	}
+
 	// START REPL
 	char* line;
 	while ((line = readline("λ> ")) != NULL) {

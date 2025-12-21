@@ -10,14 +10,14 @@ static int tests_failed = 0;
 
 env *global_env = NULL;
 
-#define ASSERT(cond, msg) do {		\
-	tests_run++;			\
-	if (!(cond)) {			\
-		tests_failed++;		\
+#define ASSERT(cond, msg) do {			\
+	tests_run++;				\
+	if (!(cond)) {				\
+		tests_failed++;			\
 		printf("FAIL: %s\n", msg);	\
-	} else {			\
+	} else {				\
 		printf("PASS: %s\n", msg);	\
-	}				\
+	}					\
 } while (0)
 
 void test_make_int() {
