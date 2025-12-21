@@ -48,6 +48,17 @@ value *cons(value *car, value *cdr) {
 	return val;
 }
 
+value *car(value *cons) {
+	//TODO: more robust implementation with error catching
+	return cons->as.pair.car;
+}	
+
+value *cdr(value *cons) {
+	//TODO: more robust implementation with error catching
+	return cons->as.pair.cdr;
+}	
+
+
 void *print_value(value *val){
 	char *str;
 	switch (val->type) {
@@ -118,45 +129,58 @@ value *env_lookup(env *e, const char *sym) {
 	return NULL;
 }
 
-int main(void) {
-	/* TEST; DANKE CHATGPT
-	// create global environment
-	env *global = env_create(NULL);
-	// define some variables
-	env_define(global, "x", make_int(10));
-	env_define(global, "y", make_int(42));
-	
-	// lookup variables
-	value *vx = env_lookup(global, "x");
-	value *vy = env_lookup(global, "y");
-	value *vz = env_lookup(global, "z"); // undefined
-	//
-	if (vx) {
-		printf("x = ");
-		print_value(vx);
-		printf("\n");
-	}
-	if (vx) {
-		printf("y = ");
-		print_value(vy);
-		printf("\n");
-	}
-	if (vz) {
-		printf("z = ");
-		print_value(vz);
-		printf("\n");
+value *eval(env *e, value *v) {
+	value *found;
+
+	if (v->type == VALTYPE_NIL) {
+		return v;
 	}
 
-	// create nested environment
-	env *local = env_create(global);
-	env_define(local, "x", make_int(99)); // shadow global x
-	
-	value *lx = env_lookup(local, "x"); // should find local
-	value *ly = env_lookup(local, "y"); // should find global
-	
-	printf("local x = %d\n", lx ? lx->as.i : -1);
-	printf("local y = %d\n", ly ? ly->as.i : -1);
-	*/
+	if (v->type == VALTYPE_SYMBOL &&
+		(found = env_lookup(e, v->as.sym))) {
+		return found;
+	}
+
+	if (v->type == VALTYPE_SYMBOL) {
+		printf("symbol %s not found\n", v->as.sym);
+		return v;
+	}
+
+	if (v->type == VALTYPE_PAIR) {
+		return eval_pair(e, v);
+	}
+
+	return v;
+}
+
+value *eval_pair(env *e, value *v) {
+	value *head = v->as.pair.car;
+	value *tail = v->as.pair.cdr;
+
+	if (head->type == VALTYPE_SYMBOL &&
+	    tail->type == VALTYPE_PAIR) {
+		if(!strcmp(head->as.str, "define")) {
+			value *defargs = cdr(v);
+			value *defname = car(defargs);
+			value *defval = eval(e, car(cdr(defargs)));
+
+			if (defname->type != VALTYPE_SYMBOL) {
+				printf("error, expected symbol, found: ");
+				print_value(defname);
+				printf("\n");
+				return v;
+			}
+			env_define(e, defname->as.sym, defval);
+		}
+	}
+	return v;
+}
+
+env *global_env = NULL;
+
+int main(void) {
+	// init global env
+	global_env = env_create(NULL);
 	// START REPL
 	char* line;
 	while ((line = readline("λ > ")) != NULL) {
