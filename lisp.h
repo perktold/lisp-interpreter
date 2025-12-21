@@ -32,6 +32,19 @@ value *make_string(const char *str);
 value *make_nil();
 value *cons(value *car, value *cdr);
 
-void *print_val(value *val);
+void *print_value(value *val);
+// environments, TODO: make this use hashtable
+// symbol->val
+typedef struct env env;
+typedef struct env {
+	const char *symbol;
+	value *value;
+	env *next;
+	env *parent;
+} env;
+
+env *env_create(env *parent);
+env *env_define(env *e, const char *sym, value *val);
+value *env_lookup(env *e, const char *sym);
 
 #endif

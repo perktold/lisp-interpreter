@@ -28,8 +28,8 @@ static int is_integer(double x) {
 %start sexprs
 
 %%
-sexprs: sexpr { print_val($1); printf("\n"); }
-      | sexprs sexpr { print_val($2); printf("\n"); };
+sexprs: sexpr { print_value($1); printf("\n"); }
+      | sexprs sexpr { print_value($2); printf("\n"); };
 
 sexpr:  atom
      |  list
