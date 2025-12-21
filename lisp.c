@@ -66,15 +66,24 @@ value *cons(value *car, value *cdr) {
 }
 
 value *car(value *cons) {
-	//TODO: more robust implementation with error catching
-	return cons->as.pair.car;
+	if (cons->type == VT_PAIR) {
+		return cons->as.pair.car;
+	}
+	printf("not a pair: ");
+	print_value(cons);
+	printf("\n");
+	return make_nil();
 }	
 
 value *cdr(value *cons) {
-	//TODO: more robust implementation with error catching
-	return cons->as.pair.cdr;
+	if (cons->type == VT_PAIR) {
+		return cons->as.pair.cdr;
+	}
+	printf("not a pair: ");
+	print_value(cons);
+	printf("\n");
+	return make_nil();
 }	
-
 
 void *print_value(value *val){
 	char *str;
