@@ -25,13 +25,15 @@ int yyerror(const char *s);
 %%
 sexprs: sexpr
       {
+        value *v = eval(global_env, $1);
         printf(";> ");
-        println_value(eval(global_env, $1));
+        println_value(v);
       }
       | sexprs sexpr
       {
+        value *v = eval(global_env, $2);
         printf(";> ");
-        println_value(eval(global_env, $2));
+        println_value(v);
       };
 
 sexpr:  atom

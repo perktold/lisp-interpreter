@@ -68,7 +68,7 @@ extern env *global_env;
 value *eval(env *e, value *val);
 value *eval_pair(env *e, value *val);
 
-value *apply(value *lambda, value *args);
+value *apply(env *e, value *lambda, value *args);
 
 value *builtin_cons(env *e, value *args);
 value *builtin_car(env *e, value *args);

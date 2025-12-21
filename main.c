@@ -23,7 +23,7 @@ int main(void) {
 	env_define(global_env, "<=", make_builtin(builtin_le));
 	// START REPL
 	char* line;
-	while ((line = readline("λ > ")) != NULL) {
+	while ((line = readline("λ> ")) != NULL) {
 		if (*line) {
 			add_history(line);
 		}
