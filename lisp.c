@@ -84,7 +84,15 @@ value *cdr(value *cons) {
 	printf("cdr of non-pair: ");
 	println_value(cons);
 	return make_nil();
-}	
+}
+
+value *reverse(value *list) {
+	value *reversed = make_nil();
+	for(value *a = list; a->type == VT_PAIR; a = cdr(a)) {
+		reversed = cons(car(a), reversed);
+	}
+	return reversed;
+}
 
 void *println_value(value *val){
 	print_value(val);
@@ -238,8 +246,8 @@ value *eval_pair(env *e, value *v) {
 	}
 
 	if (head->type == VT_SYMBOL && (!strcmp(head->as.sym, "lambda") ||
-		!strcmp(head->as.sym, "\\") ||
-		!strcmp(head->as.sym, "λ"))) {
+					!strcmp(head->as.sym, "\\") ||
+					!strcmp(head->as.sym, "λ"))) {
 		value *params = car(tail);
 		value *body = car(cdr(tail));
 
@@ -268,26 +276,24 @@ value *eval_pair(env *e, value *v) {
 	}
 
 	if (head_eval->type == VT_LAMBDA) {
-		return apply(e, head_eval, tail);
+		//evaluate arguents first, then apply
+		value *args_eval = make_nil();
+		for(value *a = tail; a->type == VT_PAIR; a = cdr(a)) {
+			args_eval = cons(eval(e, car(a)), args_eval);
+		}
+		return apply(head_eval, reverse(args_eval));
 	}
 
 	return v;
 }
 
-value *apply(env *e, value *lval, value *args) {
+value *apply(value *lval, value *args) {
 	env *sub_env = env_create(lval->as.lambda.env);
 	value *params = lval->as.lambda.params;
 	value *arg = args;
 
 	while (params->type == VT_PAIR && arg->type == VT_PAIR) {
-		if (car(params)->type != VT_SYMBOL) {
-			printf("not a symbol: ");
-			println_value(car(params));
-			return make_nil();
-		}
-
-		value *arg_eval = eval(e, car(arg));
-		env_define(sub_env, car(params)->as.sym, arg_eval);
+		env_define(sub_env, car(params)->as.sym, car(arg));
 		params = cdr(params);
 		arg = cdr(arg);
 	}
@@ -305,6 +311,10 @@ value *builtin_car(env *e, value *args) {
 
 value *builtin_cdr(env *e, value *args) {
 	return cdr(eval(e, car(args)));
+}
+
+value *builtin_reverse(env *e, value *args) {
+	return reverse(eval(e, car(args)));
 }
 
 value *builtin_isnull(env *e, value *args) {

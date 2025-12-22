@@ -47,6 +47,7 @@ value *make_builtin(value *(*fn) (env *, value *));
 value *cons(value *car, value *cdr);
 value *car(value *cons);
 value *cdr(value *cons);
+value *reverse(value *list);
 
 void *print_value(value *val);
 void *println_value(value *val);
@@ -68,11 +69,12 @@ extern env *global_env;
 value *eval(env *e, value *val);
 value *eval_pair(env *e, value *val);
 
-value *apply(env *e, value *lambda, value *args);
+value *apply(value *lambda, value *args);
 
 value *builtin_cons(env *e, value *args);
 value *builtin_car(env *e, value *args);
 value *builtin_cdr(env *e, value *args);
+value *builtin_reverse(env *e, value *args);
 value *builtin_isnull(env *e, value *args);
 value *builtin_eq(env *e, value *args);
 value *builtin_add(env *e, value *args);
