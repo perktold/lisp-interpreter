@@ -74,6 +74,7 @@ value *builtin_cons(env *e, value *args);
 value *builtin_car(env *e, value *args);
 value *builtin_cdr(env *e, value *args);
 value *builtin_isnull(env *e, value *args);
+value *builtin_eq(env *e, value *args);
 value *builtin_add(env *e, value *args);
 value *builtin_sub(env *e, value *args);
 value *builtin_mul(env *e, value *args);

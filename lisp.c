@@ -35,10 +35,13 @@ value *make_string(const char *s) {
 	return val;
 }
 
+value *NIL = NULL;
 value *make_nil() {
-	value *val = malloc(sizeof(value));
-	val->type = VT_NIL;
-	return val;
+	if (!NIL) {
+		NIL = malloc(sizeof(value));
+		NIL->type = VT_NIL;
+	}
+	return NIL;
 }
 
 value *make_lambda(env *e, value *params, value *body) {
@@ -310,6 +313,46 @@ value *builtin_isnull(env *e, value *args) {
 		return make_int(1);
 	}
 	return make_nil();
+}
+
+int value_eq(value *a, value *b) {
+	if(a->type != b->type){
+		return 0;
+	}
+	if(a == b){
+		return 1;
+	}
+	switch (a->type) {
+		case VT_INT: return a->as.i == b->as.i;
+		case VT_DOUBLE: return a->as.d == b->as.d;
+		case VT_SYMBOL: return !strcmp(a->as.sym, b->as.sym);
+		case VT_STRING: return !strcmp(a->as.sym, b->as.sym);
+		case VT_NIL: return 1;
+		case VT_PAIR:
+			return value_eq(car(a), car(b)) &&
+				value_eq(cdr(a), cdr(b));
+		case VT_LAMBDA:
+		case VT_BUILTIN:
+		default:
+			return 0;
+	}
+	return 1;
+}
+
+value *builtin_eq(env *e, value *args) {
+	value *v_prev = eval(e, car(args));
+
+	args = cdr(args);
+	while (args->type == VT_PAIR) {
+		value *v_cur = eval(e, car(args));
+		if (!value_eq(v_prev, v_cur)) {
+			return make_nil();
+		}
+		v_prev = v_cur;
+		args = cdr(args);
+	}
+
+	return make_int(1);
 }
 
 value *apply_to_nums(env *e, value *args, double (*fn)(double, double)) {
