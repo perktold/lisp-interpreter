@@ -208,6 +208,8 @@ value *eval(env *e, value *v) {
 	}
 
 	if (v->type == VT_PAIR) {
+		//printf("pair found: ");
+		//println_value(v);
 		return eval_pair(e, v);
 	}
 
@@ -283,8 +285,9 @@ value *eval_pair(env *e, value *v) {
 		}
 		return apply(head_eval, reverse(args_eval));
 	}
-
-	return v;
+	
+	// else evaluate the list recursively
+	return cons(eval(e, car(v)), eval(e, cdr(v)));
 }
 
 value *apply(value *lval, value *args) {
