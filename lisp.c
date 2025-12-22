@@ -217,7 +217,8 @@ value *eval(env *e, value *v) {
 		value *found = env_lookup(e, v->as.sym);
 		if (!found) {
 			printf("symbol %s not found\n", v->as.sym);
-			return make_nil();
+			return cons(make_symbol("quote"),
+				cons(v, make_nil()));
 		}
 		return found;
 	}
@@ -287,7 +288,7 @@ value *eval_pair(env *e, value *v) {
 	}
 	
 	// else evaluate the list recursively
-	return cons(eval(e, car(v)), eval(e, cdr(v)));
+	return cons(head_eval, eval(e, cdr(v)));
 }
 
 value *apply(value *lval, value *args) {
