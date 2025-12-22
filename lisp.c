@@ -69,19 +69,19 @@ value *cons(value *car, value *cdr) {
 }
 
 value *car(value *cons) {
-	if (cons->type == VT_PAIR) {
+	if (cons && cons->type == VT_PAIR) {
 		return cons->as.pair.car;
 	}
-	printf("not a pair: ");
+	printf("car of non-pair: ");
 	println_value(cons);
 	return make_nil();
 }	
 
 value *cdr(value *cons) {
-	if (cons->type == VT_PAIR) {
+	if (cons && cons->type == VT_PAIR) {
 		return cons->as.pair.cdr;
 	}
-	printf("not a pair: ");
+	printf("cdr of non-pair: ");
 	println_value(cons);
 	return make_nil();
 }	
@@ -194,9 +194,9 @@ value *eval(env *e, value *v) {
 	//printf("evaluating: ");
 	//print_value(v);
 	//printf("\n");
-
-	if (v->type == VT_NIL) {
-		return v;
+	
+	if (!v || v->type == VT_NIL) {
+		return make_nil();
 	}
 
 	if (v->type == VT_PAIR) {
@@ -231,7 +231,7 @@ value *eval_pair(env *e, value *v) {
 		if (defname->type != VT_SYMBOL) {
 			printf("error, expected symbol, found: ");
 			println_value(defname);
-			return v;
+			return make_nil();
 		}
 		env_define(e, defname->as.sym, defval);
 		return defval;
@@ -275,7 +275,7 @@ value *eval_pair(env *e, value *v) {
 }
 
 value *apply(env *e, value *lval, value *args) {
-	env *sub_env = env_create(e);
+	env *sub_env = env_create(lval->as.lambda.env);
 	value *params = lval->as.lambda.params;
 	value *arg = args;
 
@@ -409,7 +409,7 @@ value *builtin_div(env *e, value *args) {
 	return apply_to_nums(e, args, div_fn);
 }
 
-value *builtin_le(env *e, value *args) {
+value *builtin_lt(env *e, value *args) {
 	double prev_num;
 	value *v = eval(e, car(args));
 
@@ -436,7 +436,7 @@ value *builtin_le(env *e, value *args) {
 			println_value(v);
 			return make_nil();
 		}
-		if(prev_num > cur_num) {
+		if(prev_num >= cur_num) {
 			return make_nil();
 		}
 		prev_num = cur_num;

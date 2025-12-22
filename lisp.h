@@ -79,7 +79,7 @@ value *builtin_add(env *e, value *args);
 value *builtin_sub(env *e, value *args);
 value *builtin_mul(env *e, value *args);
 value *builtin_div(env *e, value *args);
-value *builtin_le(env *e, value *args);
+value *builtin_lt(env *e, value *args);
 
 int is_integer(double x);
 

@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
 	env_define(global_env, "-", make_builtin(builtin_sub));
 	env_define(global_env, "*", make_builtin(builtin_mul));
 	env_define(global_env, "/", make_builtin(builtin_div));
-	env_define(global_env, "<=", make_builtin(builtin_le));
+	env_define(global_env, "<", make_builtin(builtin_lt));
 
 	// evaluate files
 	for(int i = 1; i < argc; i++) {
