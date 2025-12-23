@@ -1,6 +1,6 @@
 LEX     = flex
 YACC    = bison
-CC      = gcc -g -Wall -Werror
+CC      = gcc -g
 CFLAGS  = -DYYDEBUG=1
 LIBS    = -lreadline -lfl -lm
 OBJS	= lisp.o lisp.tab.o lex.yy.o

@@ -8,21 +8,21 @@ int yyerror(const char *s);
 %}
 
 %union {
-        int ival;
         double dval;
         const char *strval;
         value *val;
 }
 %token <dval> NUMBER
 %token <strval> STRING SYMBOL
-%token <ival> LPAREN RPAREN DOT QUOTE
+%token LPAREN RPAREN DOT QUOTE NLINE
 
 %type <val> expr atom list list_items
 
 %start exprs
 
 %%
-exprs: expr
+exprs: /* nothing */
+     | expr
       {
         value *v = eval(global_env, $1);
         printf(";> ");
@@ -38,7 +38,8 @@ exprs: expr
 expr:  atom
      | list
      | LPAREN expr DOT expr RPAREN { $$ = cons($2, $4); }
-     | QUOTE expr { $$ = cons(make_symbol("quote"), cons($2, make_nil())); };
+     | QUOTE expr { $$ = cons(make_symbol("quote"), cons($2, make_nil())); }
+     | NLINE { $$ = make_nil(); };
 
 list: LPAREN list_items RPAREN { $$ = $2; };
 

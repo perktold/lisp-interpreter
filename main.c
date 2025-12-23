@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
 	env_define(global_env, "cdr", make_builtin(builtin_cdr));
 	env_define(global_env, "reverse", make_builtin(builtin_reverse));
 	env_define(global_env, "null?", make_builtin(builtin_isnull));
-	env_define(global_env, "eq?", make_builtin(builtin_eq));
+	env_define(global_env, "equal?", make_builtin(builtin_equal));
 	env_define(global_env, "+", make_builtin(builtin_add));
 	env_define(global_env, "-", make_builtin(builtin_sub));
 	env_define(global_env, "*", make_builtin(builtin_mul));

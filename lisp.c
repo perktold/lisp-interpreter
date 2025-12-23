@@ -356,7 +356,7 @@ int value_eq(value *a, value *b) {
 	return 1;
 }
 
-value *builtin_eq(env *e, value *args) {
+value *builtin_equal(env *e, value *args) {
 	value *v_prev = eval(e, car(args));
 
 	args = cdr(args);
