@@ -283,7 +283,7 @@ value *eval_pair(env *e, value *v) {
 	}
 
 	if (head_eval->type == VT_LAMBDA) {
-		//evaluate arguents first, then apply
+		//evaluate arguments first, then apply
 		value *args_eval = make_nil();
 		for(value *a = tail; a->type == VT_PAIR; a = cdr(a)) {
 			args_eval = cons(eval(e, car(a)), args_eval);
@@ -296,16 +296,36 @@ value *eval_pair(env *e, value *v) {
 }
 
 value *apply(value *lval, value *args) {
+
+	if (lval->type != VT_LAMBDA) {
+		//ERROR
+		return make_nil();
+	}
+
 	env *sub_env = env_create(lval->as.lambda.env);
 	value *params = lval->as.lambda.params;
 	value *arg = args;
 
+	// bind all available args in subenv
 	while (params->type == VT_PAIR && arg->type == VT_PAIR) {
 		env_define(sub_env, car(params)->as.sym, car(arg));
 		params = cdr(params);
 		arg = cdr(arg);
 	}
-	return eval(sub_env, lval->as.lambda.body);
+
+	// all lambda parameters bound to respective args
+	if (params->type == VT_NIL) {
+		value *result = eval(sub_env, lval->as.lambda.body);
+
+		// if arguments left, try applying them to evaluated lambda
+		if (arg->type == VT_PAIR) {
+			return apply(result, arg);
+		}
+		return result;
+	}
+
+	// if not all parameters bound, return partially applied lambda
+	return make_lambda(sub_env, params, lval->as.lambda.body);
 }
 
 value *builtin_cons(env *e, value *args) {
