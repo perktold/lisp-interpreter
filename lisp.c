@@ -35,7 +35,7 @@ value *make_string(const char *s) {
 	return val;
 }
 
-value *NIL = NULL;
+value *NIL;
 value *make_nil() {
 	if (!NIL) {
 		NIL = malloc(sizeof(value));
@@ -94,12 +94,11 @@ value *reverse(value *list) {
 	return reversed;
 }
 
-void *println_value(value *val){
+void println_value(value *val){
 	print_value(val);
 	printf("\n");
 }
-void *print_value(value *val){
-	char *str;
+void print_value(value *val){
 	switch (val->type) {
 		case VT_INT:
 			printf("%d", val->as.i);
@@ -159,8 +158,6 @@ void *print_value(value *val){
 		default:
 			printf("<unknown>\n");
 	}
-
-	return val;
 }
 
 env *env_create(env *parent) {
@@ -173,6 +170,12 @@ env *env_create(env *parent) {
 }
 
 env *env_define(env *e, const char *sym, value *val) {
+	//if symbol has been found, redefine
+	if (e->symbol && !strcmp(e->symbol, sym)) {
+		e->value = val;
+		return e;
+	}
+	//if not, find end of list and add new definition
 	if (e->next) {
 		return env_define(e->next, sym, val);
 	}
@@ -460,5 +463,5 @@ value *builtin_lt(env *e, value *args) {
 }
 
 int is_integer(double x) {
-    return floor(x) == x && isfinite(x);
+	return floor(x) == x && isfinite(x);
 }

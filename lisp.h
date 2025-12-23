@@ -49,8 +49,8 @@ value *car(value *cons);
 value *cdr(value *cons);
 value *reverse(value *list);
 
-void *print_value(value *val);
-void *println_value(value *val);
+void print_value(value *val);
+void println_value(value *val);
 // environments, TODO: make this use hashtable
 // symbol->val
 typedef struct env {
