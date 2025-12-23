@@ -348,7 +348,7 @@ void test_recursive_factorial() {
 
 void test_eq_ints() {
 	env *e = env_create(NULL);
-	env_define(e, "eq", make_builtin(builtin_eq));
+	env_define(e, "eq", make_builtin(builtin_equal));
 
 	value *expr =
 		cons(make_symbol("eq"),
@@ -365,7 +365,7 @@ void test_eq_ints() {
 
 void test_eq_ints_false() {
 	env *e = env_create(NULL);
-	env_define(e, "eq", make_builtin(builtin_eq));
+	env_define(e, "eq", make_builtin(builtin_equal));
 
 	value *expr =
 		cons(make_symbol("eq"),
@@ -380,7 +380,7 @@ void test_eq_ints_false() {
 
 void test_eq_symbols() {
 	env *e = env_create(NULL);
-	env_define(e, "eq", make_builtin(builtin_eq));
+	env_define(e, "eq", make_builtin(builtin_equal));
 
 	value *expr =
 		cons(make_symbol("eq"),
@@ -395,7 +395,7 @@ void test_eq_symbols() {
 
 void test_eq_lists() {
 	env *e = env_create(NULL);
-	env_define(e, "eq", make_builtin(builtin_eq));
+	env_define(e, "eq", make_builtin(builtin_equal));
 
 	value *list1 =
 		cons(make_int(1),

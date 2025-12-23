@@ -7,9 +7,8 @@ int tcnt = 0;
 %}
 
 %%
-[[:space:]&&[^\n]]+    { /* ignore whitespace */ }
+[[:space:]]+    { /* ignore whitespace */ }
 ";"[^\n]*       { /* ignore comment */ }
-\n              { return NLINE; }
 "("             { return LPAREN; }
 ")"             { return RPAREN; }
 "\."            { return DOT; }

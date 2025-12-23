@@ -5,6 +5,13 @@
 
 int yylex(void);
 int yyerror(const char *s);
+
+void eval_and_print_REPL(value *v) {
+        if(!v) { return; }
+        value *ve = eval(global_env, v);
+        printf(";> ");
+        println_value(ve);
+}
 %}
 
 %union {
@@ -14,7 +21,7 @@ int yyerror(const char *s);
 }
 %token <dval> NUMBER
 %token <strval> STRING SYMBOL
-%token LPAREN RPAREN DOT QUOTE NLINE
+%token LPAREN RPAREN DOT QUOTE
 
 %type <val> expr atom list list_items
 
@@ -22,24 +29,13 @@ int yyerror(const char *s);
 
 %%
 exprs: /* nothing */
-     | expr
-      {
-        value *v = eval(global_env, $1);
-        printf(";> ");
-        println_value(v);
-      }
-      | exprs expr
-      {
-        value *v = eval(global_env, $2);
-        printf(";> ");
-        println_value(v);
-      };
+     | expr { eval_and_print_REPL($1); }
+     | exprs expr { eval_and_print_REPL($2); }
 
 expr:  atom
      | list
      | LPAREN expr DOT expr RPAREN { $$ = cons($2, $4); }
      | QUOTE expr { $$ = cons(make_symbol("quote"), cons($2, make_nil())); }
-     | NLINE { $$ = make_nil(); };
 
 list: LPAREN list_items RPAREN { $$ = $2; };
 

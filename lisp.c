@@ -99,6 +99,7 @@ void println_value(value *val){
 	printf("\n");
 }
 void print_value(value *val){
+	if(!val) { return; }
 	switch (val->type) {
 		case VT_INT:
 			printf("%d", val->as.i);
