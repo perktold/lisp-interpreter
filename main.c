@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "lisp.h"
 #include "lex.yy.h"
 #include "lisp.tab.h"
+
+#define DEFAULT_PROMPT "λ> "
 
 env *global_env = NULL;
 
@@ -61,15 +64,30 @@ char *env_token_gen(const char *text, int state) {
 	return NULL;
 }
 
-/* Dispatch function: called by readline to get all matches */
 char **my_completion(const char *text, int start, int end) {
-    /* Prevent default filename completion */
 	rl_attempted_completion_over = 1;
 	return rl_completion_matches(text, env_token_gen);
 }
 
+int caught_sigint = 0;
+void handle_sigint(int sig) {
+	printf("^C\n");
+
+	caught_sigint = 1;
+	rl_set_prompt(DEFAULT_PROMPT);
+	rl_replace_line("", 0);
+	rl_on_new_line();
+	rl_redisplay();
+}
+
 void init_readline() {
 	rl_attempted_completion_function = my_completion;
+
+	rl_catch_signals = 0; /* disable readline's own handlers */
+	struct sigaction sa = {0};
+	sa.sa_handler = handle_sigint;
+	sigemptyset(&sa.sa_mask);
+	sigaction(SIGINT, &sa, NULL);
 }
 
 int main(int argc, char **argv) {
@@ -98,8 +116,15 @@ int main(int argc, char **argv) {
 	int parens = 0;
 	char *line;
 	char buffer[4096] = "";
-	char *prompt = "λ> ";
+	char *prompt = DEFAULT_PROMPT;
 	while ((line = readline(prompt)) != NULL) {
+		if (caught_sigint) {
+			parens = 0;
+			buffer[0] = '\0';
+			prompt = DEFAULT_PROMPT;
+			caught_sigint = 0;
+		}
+		//printf("DEBUG: %s\n", line);
 		for (char *c = line; *c != '\0'; c++) {
 			if (*c == '(') {
 				parens++;
@@ -116,7 +141,7 @@ int main(int argc, char **argv) {
 			add_history(buffer);
 			//reset buffer and prompt string
 			buffer[0] = '\0';
-			prompt = "λ> ";
+			prompt = DEFAULT_PROMPT;
 		} else {
 			strcat(buffer, "\n");
 			prompt = "   ";
