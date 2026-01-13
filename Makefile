@@ -37,4 +37,7 @@ test.o: test.c lisp.h lex.yy.o
 run: main
 	./main
 
+run_std: main
+	./main lisp/standard_functions.lisp
+
 .PHONY: clean test run

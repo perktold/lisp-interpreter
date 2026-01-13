@@ -222,7 +222,7 @@ value *eval(env *e, value *v) {
 		if (!found) {
 			printf("symbol %s not found\n", v->as.sym);
 			return cons(make_symbol("quote"),
-				cons(v, make_nil()));
+				cons(v, make_nil())); //TODO: return error
 		}
 		return found;
 	}
@@ -318,8 +318,12 @@ value *apply(value *lval, value *args) {
 		value *result = eval(sub_env, lval->as.lambda.body);
 
 		// if arguments left, try applying them to evaluated lambda
-		if (arg->type == VT_PAIR) {
+		if (arg->type == VT_PAIR && result->type == VT_LAMBDA) {
 			return apply(result, arg);
+		}
+		// if arguments left but result is not a lambda, explicitely return false TODO: return an error
+		if (arg->type == VT_PAIR) {
+			return make_nil();
 		}
 		return result;
 	}
