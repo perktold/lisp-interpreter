@@ -120,7 +120,8 @@ void test_lambda_add() {
 	env *e = env_create(NULL);
 
 	// install +
-	env_define(e, "+", make_procedure(procedure_add));
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+	
 
 	value *expr =
 		cons(
@@ -148,7 +149,7 @@ void test_lambda_add() {
 
 void test_lambda_multiple_args() {
 	env *e = env_create(NULL);
-	env_define(e, "+", make_procedure(procedure_add));
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
 
 	value *expr =
 		cons(
@@ -184,7 +185,8 @@ void test_lambda_closure() {
 	//((lambda (y) (+ x y)) 5)
 
 	env *e = env_create(NULL);
-	env_define(e, "+", make_procedure(procedure_add));
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+	
 	env_define(e, "x", make_int(10));
 
 	value *expr =
@@ -213,7 +215,7 @@ void test_lambda_closure() {
 void test_nested_lambdas() {
 	// (((lambda (x) (lambda (y) (+ x y))) 3) 4)
 	env *e = env_create(NULL);
-	env_define(e, "+", make_procedure(procedure_add));
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
 
 	value *expr =
 		cons(
@@ -274,10 +276,7 @@ void test_lambda_does_not_modify_outer_env() {
 void test_recursive_factorial() {
 	env *e = env_create(NULL);
 
-	env_define(e, "+", make_procedure(procedure_add));
-	env_define(e, "-", make_procedure(procedure_sub));
-	env_define(e, "*", make_procedure(procedure_mul));
-	env_define(e, "<", make_procedure(procedure_lt));
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
 
 	/*
 	(define fact
@@ -349,10 +348,11 @@ void test_recursive_factorial() {
 
 void test_eq_ints() {
 	env *e = env_create(NULL);
-	env_define(e, "eq", make_procedure(procedure_equal));
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+	
 
 	value *expr =
-		cons(make_symbol("eq"),
+		cons(make_symbol("equal?"),
 			cons(make_int(3),
 				cons(make_int(3), make_nil())
 			)
@@ -366,10 +366,11 @@ void test_eq_ints() {
 
 void test_eq_ints_false() {
 	env *e = env_create(NULL);
-	env_define(e, "eq", make_procedure(procedure_equal));
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+	
 
 	value *expr =
-		cons(make_symbol("eq"),
+		cons(make_symbol("equal?"),
 			cons(make_int(3),
 				cons(make_int(4), make_nil())
 			)
@@ -381,10 +382,11 @@ void test_eq_ints_false() {
 
 void test_eq_symbols() {
 	env *e = env_create(NULL);
-	env_define(e, "eq", make_procedure(procedure_equal));
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+	
 
 	value *expr =
-		cons(make_symbol("eq"),
+		cons(make_symbol("equal?"),
 			cons(make_symbol("foo"),
 				cons(make_symbol("foo"), make_nil())
 			)
@@ -396,7 +398,8 @@ void test_eq_symbols() {
 
 void test_eq_lists() {
 	env *e = env_create(NULL);
-	env_define(e, "eq", make_procedure(procedure_equal));
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+	
 
 	value *list1 =
 		cons(make_int(1),
@@ -409,7 +412,7 @@ void test_eq_lists() {
 		);
 
 	value *expr =
-		cons(make_symbol("eq"),
+		cons(make_symbol("equal?"),
 			cons(list1,
 				cons(list2, make_nil())
 			)
@@ -421,7 +424,8 @@ void test_eq_lists() {
 
 void test_null_true() {
 	env *e = env_create(NULL);
-	env_define(e, "null?", make_procedure(procedure_isnull));
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+	
 
 	value *expr =
 		cons(make_symbol("null?"),
@@ -434,7 +438,8 @@ void test_null_true() {
 
 void test_null_false() {
 	env *e = env_create(NULL);
-	env_define(e, "null?", make_procedure(procedure_isnull));
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+	
 
 	value *expr =
 		cons(make_symbol("null?"),
@@ -450,7 +455,7 @@ void test_null_false() {
 
 void test_if_true() {
 	env *e = env_create(NULL);
-	env_define(e, "<", make_procedure(procedure_lt));
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
 
 	value *expr =
 		cons(make_symbol("if"),
@@ -503,7 +508,7 @@ void test_if_short_circuit() {
 
 void test_add_multiple_args() {
 	env *e = env_create(NULL);
-	env_define(e, "+", make_procedure(procedure_add));
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
 
 	value *expr =
 		cons(make_symbol("+"),
@@ -520,7 +525,7 @@ void test_add_multiple_args() {
 
 void test_lt_chain() {
 	env *e = env_create(NULL);
-	env_define(e, "<", make_procedure(procedure_lt));
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
 
 	value *expr =
 		cons(make_symbol("<"),
@@ -536,32 +541,56 @@ void test_lt_chain() {
 }
 
 int main(void) {
+	printf("lol 1\n");
 	test_make_int();
+	printf("lol 2\n");
 	test_cons_car_cdr();
+	printf("lol 3\n");
 	test_env_define_lookup();
+	printf("lol 4\n");
 	test_env_parent_lookup();
+	printf("lol 5\n");
 	test_eval_literal();
+	printf("lol 6\n");
 	test_eval_symbol();
+	printf("lol 7\n");
 	test_define();
+	printf("lol 8\n");
 	test_lambda_identity();
+	printf("lol 9\n");
 	test_lambda_add();
+	printf("lol 10\n");
 	test_lambda_multiple_args();
+	printf("lol 11\n");
 	test_lambda_closure();
+	printf("lol 12\n");
 	test_nested_lambdas();
+	printf("lol 13\n");
 	test_lambda_does_not_modify_outer_env();
+	printf("lol 14\n");
 	test_recursive_factorial();
+	printf("lol 15\n");
 	test_eq_ints();
+	printf("lol 16\n");
 	test_eq_ints_false();
+	printf("lol 17\n");
 	test_eq_symbols();
+	printf("lol 18\n");
 	test_eq_lists();
+	printf("lol 19\n");
 	test_null_true();
+	printf("lol 20\n");
 	test_null_false();
+	printf("lol 21\n");
 	test_if_true();
+	printf("lol 22\n");
 	test_if_false();
+	printf("lol 23\n");
 	test_if_short_circuit();
+	printf("lol 24\n");
 	test_add_multiple_args();
+	printf("lol 25\n");
 	test_lt_chain();
-
 
 	printf("\nTests run: %d\n", tests_run);
 	printf("Tests failed: %d\n", tests_failed);

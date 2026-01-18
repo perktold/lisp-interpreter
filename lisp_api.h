@@ -61,4 +61,6 @@ typedef struct {
 
 module_export *module_init();
 
+int is_integer(double x);
+
 #endif

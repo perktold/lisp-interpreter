@@ -94,19 +94,8 @@ void init_readline() {
 int main(int argc, char **argv) {
 	// init global env
 	global_env = env_create(NULL);
-	env_define(global_env, "cons", make_procedure(procedure_cons));
-	env_define(global_env, "car", make_procedure(procedure_car));
-	env_define(global_env, "cdr", make_procedure(procedure_cdr));
-	env_define(global_env, "reverse", make_procedure(procedure_reverse));
-	env_define(global_env, "null?", make_procedure(procedure_isnull));
-	env_define(global_env, "equal?", make_procedure(procedure_equal));
-	env_define(global_env, "+", make_procedure(procedure_add));
-	env_define(global_env, "-", make_procedure(procedure_sub));
-	env_define(global_env, "*", make_procedure(procedure_mul));
-	env_define(global_env, "/", make_procedure(procedure_div));
-	env_define(global_env, "<", make_procedure(procedure_lt));
-
 	env_define(global_env, "load_module", make_procedure(procedure_load_module));
+	procedure_load_module(global_env, cons(make_string("modules/std_lib.so"), make_nil()));
 
 	// evaluate files
 	for(int i = 1; i < argc; i++) {

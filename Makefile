@@ -8,9 +8,10 @@ OBJS	= lisp.o lisp.tab.o lex.yy.o
 MODULE_LIBS = -lpq
 MODULE_SRC  = $(wildcard modules/*.c)
 MODULE_SO   = $(MODULE_SRC:.c=.so)
+STD_MODULES = modules/std_lib.so
 .SUFFIXES:
 
-main: main.c $(OBJS)
+main: main.c $(OBJS) $(STD_MODULES)
 	$(CC) $(CFLAGS) -o $@ main.c $(OBJS) $(LIBS)
 
 lisp.o: lisp.c lisp_api.h lisp.h lex.yy.o
@@ -31,7 +32,7 @@ lex.yy.o: lex.yy.c
 clean:
 	rm -f *.o main test lisp.tab.c lisp.tab.h lex.yy.c lex.yy.h modules/*.so
 
-test: test.o $(OBJS)
+test: test.o $(OBJS) $(STD_MODULES)
 	$(CC) $(CFLAGS) -o $@ test.o $(OBJS) $(LIBS)
 	./test
 	
