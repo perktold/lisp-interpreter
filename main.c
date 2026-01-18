@@ -94,19 +94,19 @@ void init_readline() {
 int main(int argc, char **argv) {
 	// init global env
 	global_env = env_create(NULL);
-	env_define(global_env, "cons", make_builtin(builtin_cons));
-	env_define(global_env, "car", make_builtin(builtin_car));
-	env_define(global_env, "cdr", make_builtin(builtin_cdr));
-	env_define(global_env, "reverse", make_builtin(builtin_reverse));
-	env_define(global_env, "null?", make_builtin(builtin_isnull));
-	env_define(global_env, "equal?", make_builtin(builtin_equal));
-	env_define(global_env, "+", make_builtin(builtin_add));
-	env_define(global_env, "-", make_builtin(builtin_sub));
-	env_define(global_env, "*", make_builtin(builtin_mul));
-	env_define(global_env, "/", make_builtin(builtin_div));
-	env_define(global_env, "<", make_builtin(builtin_lt));
+	env_define(global_env, "cons", make_procedure(procedure_cons));
+	env_define(global_env, "car", make_procedure(procedure_car));
+	env_define(global_env, "cdr", make_procedure(procedure_cdr));
+	env_define(global_env, "reverse", make_procedure(procedure_reverse));
+	env_define(global_env, "null?", make_procedure(procedure_isnull));
+	env_define(global_env, "equal?", make_procedure(procedure_equal));
+	env_define(global_env, "+", make_procedure(procedure_add));
+	env_define(global_env, "-", make_procedure(procedure_sub));
+	env_define(global_env, "*", make_procedure(procedure_mul));
+	env_define(global_env, "/", make_procedure(procedure_div));
+	env_define(global_env, "<", make_procedure(procedure_lt));
 
-	env_define(global_env, "load_module", make_builtin(builtin_load_module));
+	env_define(global_env, "load_module", make_procedure(procedure_load_module));
 
 	// evaluate files
 	for(int i = 1; i < argc; i++) {

@@ -54,7 +54,7 @@
 ; apply
 (define (apply proc args)
   (cond
-    ((procedure? proc) (apply proc args)) ; builtin
+    ((procedure? proc) (apply proc args)) ; procedure
     ((and (pair? proc) (eq? (car proc) 'closure))
      (let ((params (cadr proc))
            (body (caddr proc))

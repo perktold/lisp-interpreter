@@ -12,7 +12,7 @@ typedef enum {
 	VT_NIL,
 	VT_PAIR,
 	VT_LAMBDA,
-	VT_BUILTIN
+	VT_PROCEDURE
 } val_type;
 
 struct value {
@@ -33,7 +33,7 @@ struct value {
 		} lambda;
 		struct {
 			value *(*fn) (env *, value *);
-		} builtin;
+		} procedure;
 	} as;
 };
 
@@ -43,7 +43,7 @@ value *make_symbol(const char *sym);
 value *make_string(const char *str);
 value *make_nil();
 value *make_lambda(env *e, value *params, value *body);
-value *make_builtin(value *(*fn) (env *, value *));
+value *make_procedure(value *(*fn) (env *, value *));
 value *cons(value *car, value *cdr);
 value *car(value *cons);
 value *cdr(value *cons);

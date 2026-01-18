@@ -55,10 +55,10 @@ value *make_lambda(env *e, value *params, value *body) {
 	return l;
 }
 
-value *make_builtin(value *(*fn) (env *, value *)){
+value *make_procedure(value *(*fn) (env *, value *)){
 	value *val = malloc(sizeof(value));
-	val->type = VT_BUILTIN;
-	val->as.builtin.fn = fn;
+	val->type = VT_PROCEDURE;
+	val->as.procedure.fn = fn;
 	return val;
 }
 
@@ -155,8 +155,8 @@ void print_value(value *val){
 			printf(")");
 			break;
 
-		case VT_BUILTIN:
-			printf("<builtin>\n");
+		case VT_PROCEDURE:
+			printf("<procedure>\n");
 			break;
 		default:
 			printf("<unknown>\n");
@@ -280,8 +280,8 @@ value *eval_pair(env *e, value *v) {
 	}
 
 	value *head_eval = eval(e, head);
-	if (head_eval->type == VT_BUILTIN) {
-		return head_eval->as.builtin.fn(e, tail);
+	if (head_eval->type == VT_PROCEDURE) {
+		return head_eval->as.procedure.fn(e, tail);
 	}
 
 	if (head_eval->type == VT_LAMBDA) {
@@ -334,24 +334,24 @@ value *apply(value *lval, value *args) {
 	return make_lambda(sub_env, params, lval->as.lambda.body);
 }
 
-value *builtin_cons(env *e, value *args) {
+value *procedure_cons(env *e, value *args) {
 	value *v = eval(e, car(args));
 	return cons(v, eval(e, car(cdr(args))));
 }
 
-value *builtin_car(env *e, value *args) {
+value *procedure_car(env *e, value *args) {
 	return car(eval(e, car(args)));
 }
 
-value *builtin_cdr(env *e, value *args) {
+value *procedure_cdr(env *e, value *args) {
 	return cdr(eval(e, car(args)));
 }
 
-value *builtin_reverse(env *e, value *args) {
+value *procedure_reverse(env *e, value *args) {
 	return reverse(eval(e, car(args)));
 }
 
-value *builtin_isnull(env *e, value *args) {
+value *procedure_isnull(env *e, value *args) {
 	value *v = eval(e, car(args));
 	if(v->type == VT_NIL) {
 		return make_int(1);
@@ -376,14 +376,14 @@ int value_eq(value *a, value *b) {
 			return value_eq(car(a), car(b)) &&
 				value_eq(cdr(a), cdr(b));
 		case VT_LAMBDA:
-		case VT_BUILTIN:
+		case VT_PROCEDURE:
 		default:
 			return 0;
 	}
 	return 1;
 }
 
-value *builtin_equal(env *e, value *args) {
+value *procedure_equal(env *e, value *args) {
 	value *v_prev = eval(e, car(args));
 
 	args = cdr(args);
@@ -434,26 +434,26 @@ value *apply_to_nums(env *e, value *args, double (*fn)(double, double)) {
 }
 
 double add_fn(double x, double y) { return x+y; }
-value *builtin_add(env *e, value *args) {
+value *procedure_add(env *e, value *args) {
 	return apply_to_nums(e, args, add_fn);
 }
 
 double sub_fn(double x, double y) { return x-y; }
-value *builtin_sub(env *e, value *args) {
+value *procedure_sub(env *e, value *args) {
 	return apply_to_nums(e, args, sub_fn);
 }
 
 double mul_fn(double x, double y) { return x*y; }
-value *builtin_mul(env *e, value *args) {
+value *procedure_mul(env *e, value *args) {
 	return apply_to_nums(e, args, mul_fn);
 }
 
 double div_fn(double x, double y) { return x/y; }
-value *builtin_div(env *e, value *args) {
+value *procedure_div(env *e, value *args) {
 	return apply_to_nums(e, args, div_fn);
 }
 
-value *builtin_lt(env *e, value *args) {
+value *procedure_lt(env *e, value *args) {
 	double prev_num;
 	value *v = eval(e, car(args));
 
@@ -489,7 +489,7 @@ value *builtin_lt(env *e, value *args) {
 	return make_int(1);
 }
 
-value *builtin_load_module(env *e, value *args) {
+value *procedure_load_module(env *e, value *args) {
 	value *fst_arg = eval(e, car(args));
 
 	if (fst_arg->type != VT_STRING) {

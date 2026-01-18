@@ -120,7 +120,7 @@ void test_lambda_add() {
 	env *e = env_create(NULL);
 
 	// install +
-	env_define(e, "+", make_builtin(builtin_add));
+	env_define(e, "+", make_procedure(procedure_add));
 
 	value *expr =
 		cons(
@@ -148,7 +148,7 @@ void test_lambda_add() {
 
 void test_lambda_multiple_args() {
 	env *e = env_create(NULL);
-	env_define(e, "+", make_builtin(builtin_add));
+	env_define(e, "+", make_procedure(procedure_add));
 
 	value *expr =
 		cons(
@@ -184,7 +184,7 @@ void test_lambda_closure() {
 	//((lambda (y) (+ x y)) 5)
 
 	env *e = env_create(NULL);
-	env_define(e, "+", make_builtin(builtin_add));
+	env_define(e, "+", make_procedure(procedure_add));
 	env_define(e, "x", make_int(10));
 
 	value *expr =
@@ -213,7 +213,7 @@ void test_lambda_closure() {
 void test_nested_lambdas() {
 	// (((lambda (x) (lambda (y) (+ x y))) 3) 4)
 	env *e = env_create(NULL);
-	env_define(e, "+", make_builtin(builtin_add));
+	env_define(e, "+", make_procedure(procedure_add));
 
 	value *expr =
 		cons(
@@ -274,10 +274,10 @@ void test_lambda_does_not_modify_outer_env() {
 void test_recursive_factorial() {
 	env *e = env_create(NULL);
 
-	env_define(e, "+", make_builtin(builtin_add));
-	env_define(e, "-", make_builtin(builtin_sub));
-	env_define(e, "*", make_builtin(builtin_mul));
-	env_define(e, "<", make_builtin(builtin_lt));
+	env_define(e, "+", make_procedure(procedure_add));
+	env_define(e, "-", make_procedure(procedure_sub));
+	env_define(e, "*", make_procedure(procedure_mul));
+	env_define(e, "<", make_procedure(procedure_lt));
 
 	/*
 	(define fact
@@ -349,7 +349,7 @@ void test_recursive_factorial() {
 
 void test_eq_ints() {
 	env *e = env_create(NULL);
-	env_define(e, "eq", make_builtin(builtin_equal));
+	env_define(e, "eq", make_procedure(procedure_equal));
 
 	value *expr =
 		cons(make_symbol("eq"),
@@ -366,7 +366,7 @@ void test_eq_ints() {
 
 void test_eq_ints_false() {
 	env *e = env_create(NULL);
-	env_define(e, "eq", make_builtin(builtin_equal));
+	env_define(e, "eq", make_procedure(procedure_equal));
 
 	value *expr =
 		cons(make_symbol("eq"),
@@ -381,7 +381,7 @@ void test_eq_ints_false() {
 
 void test_eq_symbols() {
 	env *e = env_create(NULL);
-	env_define(e, "eq", make_builtin(builtin_equal));
+	env_define(e, "eq", make_procedure(procedure_equal));
 
 	value *expr =
 		cons(make_symbol("eq"),
@@ -396,7 +396,7 @@ void test_eq_symbols() {
 
 void test_eq_lists() {
 	env *e = env_create(NULL);
-	env_define(e, "eq", make_builtin(builtin_equal));
+	env_define(e, "eq", make_procedure(procedure_equal));
 
 	value *list1 =
 		cons(make_int(1),
@@ -421,7 +421,7 @@ void test_eq_lists() {
 
 void test_null_true() {
 	env *e = env_create(NULL);
-	env_define(e, "null?", make_builtin(builtin_isnull));
+	env_define(e, "null?", make_procedure(procedure_isnull));
 
 	value *expr =
 		cons(make_symbol("null?"),
@@ -434,7 +434,7 @@ void test_null_true() {
 
 void test_null_false() {
 	env *e = env_create(NULL);
-	env_define(e, "null?", make_builtin(builtin_isnull));
+	env_define(e, "null?", make_procedure(procedure_isnull));
 
 	value *expr =
 		cons(make_symbol("null?"),
@@ -450,7 +450,7 @@ void test_null_false() {
 
 void test_if_true() {
 	env *e = env_create(NULL);
-	env_define(e, "<", make_builtin(builtin_lt));
+	env_define(e, "<", make_procedure(procedure_lt));
 
 	value *expr =
 		cons(make_symbol("if"),
@@ -503,7 +503,7 @@ void test_if_short_circuit() {
 
 void test_add_multiple_args() {
 	env *e = env_create(NULL);
-	env_define(e, "+", make_builtin(builtin_add));
+	env_define(e, "+", make_procedure(procedure_add));
 
 	value *expr =
 		cons(make_symbol("+"),
@@ -520,7 +520,7 @@ void test_add_multiple_args() {
 
 void test_lt_chain() {
 	env *e = env_create(NULL);
-	env_define(e, "<", make_builtin(builtin_lt));
+	env_define(e, "<", make_procedure(procedure_lt));
 
 	value *expr =
 		cons(make_symbol("<"),
