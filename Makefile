@@ -5,8 +5,9 @@ CFLAGS  = -DYYDEBUG=1 -fPIC
 LIBS    = -lreadline -lfl -lm
 OBJS	= lisp.o lisp.tab.o lex.yy.o
 
-MODULE_SRC = $(wildcard modules/*.c)
-MODULE_SO = $(MODULE_SRC:.c=.so)
+MODULE_LIBS = -lpq
+MODULE_SRC  = $(wildcard modules/*.c)
+MODULE_SO   = $(MODULE_SRC:.c=.so)
 .SUFFIXES:
 
 main: main.c $(OBJS)
@@ -48,7 +49,7 @@ modules: $(MODULE_SO)
 
 modules/%.so: modules/%.c lisp.o
 	gcc -fPIC -c $< -o $*.o
-	gcc -fPIC -shared $*.o lisp.o -o $@
+	gcc -fPIC -shared $*.o lisp.o -o $@ $(MODULE_LIBS)
 	rm $*.o
 
 .PHONY: clean test run

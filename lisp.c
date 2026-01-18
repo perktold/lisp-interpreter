@@ -26,14 +26,14 @@ value *make_double(double d) {
 value *make_symbol(const char *s) {
 	value *val = malloc(sizeof(value));
 	val->type = VT_SYMBOL;
-	val->as.sym = s;
+	val->as.sym = strdup(s);
 	return val;
 }
 
 value *make_string(const char *s) {
 	value *val = malloc(sizeof(value));
 	val->type = VT_STRING;
-	val->as.str = s;
+	val->as.str = strdup(s);
 	return val;
 }
 
@@ -518,7 +518,7 @@ value *procedure_load_module(env *e, value *args) {
 		env_define(e, exports[i].name, exports[i].v);
 	}
 
-	return make_nil();
+	return make_int(1);
 }
 
 int is_integer(double x) {

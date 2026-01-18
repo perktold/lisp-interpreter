@@ -4,6 +4,11 @@
 typedef struct value value;
 typedef struct env env;
 
+value *eval(env *e, value *val);
+
+void print_value(value *val);
+void println_value(value *val);
+
 typedef enum {
 	VT_INT,
 	VT_DOUBLE,

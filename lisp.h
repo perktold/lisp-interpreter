@@ -4,8 +4,6 @@
 typedef struct value value;
 typedef struct env env;
 
-void print_value(value *val);
-void println_value(value *val);
 // environments, TODO: make this use hashtable
 // symbol->val
 typedef struct env {
@@ -21,7 +19,6 @@ value *env_lookup(env *e, const char *sym);
 
 extern env *global_env;
 
-value *eval(env *e, value *val);
 value *eval_pair(env *e, value *val);
 
 value *apply(value *lambda, value *args);
