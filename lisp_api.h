@@ -1,0 +1,52 @@
+#ifndef LISP_API_H
+#define LISP_API_H
+
+typedef struct value value;
+typedef struct env env;
+
+typedef enum {
+	VT_INT,
+	VT_DOUBLE,
+	VT_SYMBOL,
+	VT_STRING,
+	VT_NIL,
+	VT_PAIR,
+	VT_LAMBDA,
+	VT_BUILTIN
+} val_type;
+
+struct value {
+	val_type type;
+	union {
+		int i;
+		double d;
+		const char *sym;
+		const char *str;
+		struct {
+			value *car;
+			value *cdr;
+		} pair;
+		struct {
+			value *params;
+			value *body;
+			env *env;
+		} lambda;
+		struct {
+			value *(*fn) (env *, value *);
+		} builtin;
+	} as;
+};
+
+value *make_int(int i);
+value *make_double(double d);
+value *make_symbol(const char *sym);
+value *make_string(const char *str);
+value *make_nil();
+value *make_lambda(env *e, value *params, value *body);
+value *make_builtin(value *(*fn) (env *, value *));
+value *cons(value *car, value *cdr);
+value *car(value *cons);
+value *cdr(value *cons);
+value *reverse(value *list);
+
+#endif

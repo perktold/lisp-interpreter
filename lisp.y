@@ -1,6 +1,7 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include "lisp_api.h"
 #include "lisp.h"
 
 int yylex(void);

@@ -3,6 +3,7 @@
 #include <signal.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include "lisp_api.h"
 #include "lisp.h"
 #include "lex.yy.h"
 #include "lisp.tab.h"

@@ -9,7 +9,7 @@ OBJS	= lisp.o lisp.tab.o lex.yy.o
 main: main.c $(OBJS)
 	$(CC) $(CFLAGS) -o $@ main.c $(OBJS) $(LIBS)
 
-lisp.o: lisp.c lisp.h lex.yy.o
+lisp.o: lisp.c lisp_api.h lisp.h lex.yy.o
 	$(CC) $(CFLAGS) -c lisp.c
 
 lisp.tab.c lisp.tab.h: lisp.y

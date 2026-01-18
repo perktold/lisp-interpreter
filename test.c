@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "lisp_api.h"
 #include "lisp.h"
 #include "lex.yy.h"
 #include "lisp.tab.h"
