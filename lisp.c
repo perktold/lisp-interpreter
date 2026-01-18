@@ -3,6 +3,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <math.h>
+#include <dlfcn.h>
 #include "lisp_api.h"
 #include "lisp.h"
 #include "lex.yy.h"
@@ -486,6 +487,38 @@ value *builtin_lt(env *e, value *args) {
 		args = cdr(args);
 	}
 	return make_int(1);
+}
+
+value *builtin_load_module(env *e, value *args) {
+	value *fst_arg = eval(e, car(args));
+
+	if (fst_arg->type != VT_STRING) {
+		printf("error: not a string:");
+		print_value(fst_arg);
+		return make_nil(); //TODO: make_err
+	}
+
+	const char *path = fst_arg->as.str;
+
+	void *handle = dlopen(path, RTLD_LAZY);
+	if (!handle) {
+		printf("dlopen error: %s\n", dlerror());
+		return make_nil(); //TODO: make_err
+	}
+
+	module_export *(*init)(void) = dlsym(handle, "module_init");
+
+	if (!init) {
+		printf("not a valid module: %s\n", dlerror());
+		return make_nil(); //TODO: make_err
+	}
+
+	module_export *exports = init();
+	for (int i = 0; exports[i].name; i++) {
+		env_define(e, exports[i].name, exports[i].v);
+	}
+
+	return make_nil();
 }
 
 int is_integer(double x) {

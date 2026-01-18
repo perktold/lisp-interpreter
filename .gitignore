@@ -1,4 +1,5 @@
 *.o
+*.so
 lex.yy.*
 lisp.tab.*
 main

@@ -106,6 +106,8 @@ int main(int argc, char **argv) {
 	env_define(global_env, "/", make_builtin(builtin_div));
 	env_define(global_env, "<", make_builtin(builtin_lt));
 
+	env_define(global_env, "load_module", make_builtin(builtin_load_module));
+
 	// evaluate files
 	for(int i = 1; i < argc; i++) {
 		eval_file(argv[i]);

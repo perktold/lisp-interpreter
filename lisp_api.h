@@ -49,4 +49,11 @@ value *car(value *cons);
 value *cdr(value *cons);
 value *reverse(value *list);
 
+typedef struct {
+    const char *name;
+    value *v;
+} module_export;
+
+module_export *module_init();
+
 #endif

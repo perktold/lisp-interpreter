@@ -1,9 +1,12 @@
 LEX     = flex
 YACC    = bison
 CC      = gcc -g
-CFLAGS  = -DYYDEBUG=1
+CFLAGS  = -DYYDEBUG=1 -fPIC
 LIBS    = -lreadline -lfl -lm
 OBJS	= lisp.o lisp.tab.o lex.yy.o
+
+MODULE_SRC = $(wildcard modules/*.c)
+MODULE_SO = $(MODULE_SRC:.c=.so)
 .SUFFIXES:
 
 main: main.c $(OBJS)
@@ -25,7 +28,7 @@ lex.yy.o: lex.yy.c
 	$(CC) $(CFLAGS) -c lex.yy.c
 
 clean:
-	rm -f *.o main test lisp.tab.c lisp.tab.h lex.yy.c lex.yy.h
+	rm -f *.o main test lisp.tab.c lisp.tab.h lex.yy.c lex.yy.h modules/*.so
 
 test: test.o $(OBJS)
 	$(CC) $(CFLAGS) -o $@ test.o $(OBJS) $(LIBS)
@@ -39,5 +42,13 @@ run: main
 
 run_std: main
 	./main lisp/standard_functions.lisp
+
+modules: $(MODULE_SO)
+	@echo "All modules built successfully."
+
+modules/%.so: modules/%.c lisp.o
+	gcc -fPIC -c $< -o $*.o
+	gcc -fPIC -shared $*.o lisp.o -o $@
+	rm $*.o
 
 .PHONY: clean test run
