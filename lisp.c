@@ -55,10 +55,17 @@ value *make_lambda(env *e, value *params, value *body) {
 	return l;
 }
 
-value *make_procedure(value *(*fn) (env *, value *)){
+value *make_procedure(value *(*fn) (env *, value *)) {
 	value *val = malloc(sizeof(value));
 	val->type = VT_PROCEDURE;
 	val->as.procedure.fn = fn;
+	return val;
+}
+
+value *make_error(const char *s) {
+	value *val = malloc(sizeof(value));
+	val->type = VT_ERROR;
+	val->as.err = strdup(s);
 	return val;
 }
 
@@ -76,7 +83,7 @@ value *car(value *cons) {
 	}
 	printf("car of non-pair: ");
 	println_value(cons);
-	return make_nil();
+	return make_error("car of non-pair: ");
 }	
 
 value *cdr(value *cons) {
@@ -85,7 +92,7 @@ value *cdr(value *cons) {
 	}
 	printf("cdr of non-pair: ");
 	println_value(cons);
-	return make_nil();
+	return make_error("cons of non-pair: ");
 }
 
 value *reverse(value *list) {
@@ -96,11 +103,12 @@ value *reverse(value *list) {
 	return reversed;
 }
 
-void println_value(value *val){
+void println_value(value *val) {
 	print_value(val);
 	printf("\n");
 }
-void print_value(value *val){
+
+void print_value(value *val) {
 	if(!val) { return; }
 	switch (val->type) {
 		case VT_INT:
@@ -158,8 +166,14 @@ void print_value(value *val){
 		case VT_PROCEDURE:
 			printf("<procedure>\n");
 			break;
+
+		case VT_ERROR:
+			printf("(error \"%s\")", val->as.err);
+			break;
 		default:
-			printf("<unknown>\n");
+			fprintf(stderr, "<unknown>[as str:%s][as f:%f][as int:%d]\n", val->as.str, val->as.d, val->as.i);
+			fprintf(stderr, "<unknown>[as pair: (%s . %s)\n", val->as.pair.car, val->as.pair.cdr);
+			break;
 	}
 }
 
@@ -209,26 +223,30 @@ value *eval(env *e, value *v) {
 	//print_value(v);
 	//printf("\n");
 	
+	//nil evaluates to itself
 	if (!v || v->type == VT_NIL) {
 		return make_nil();
 	}
 
+	//symbols get evaluated
+	if (v->type == VT_SYMBOL) {
+		value *found = env_lookup(e, v->as.sym);
+		if (!found) {
+			printf("symbol %s not found\n", v->as.sym);
+			return make_error("symbol not found");
+			///return list(make_symbol("quote"), v); //TODO: return error
+		}
+		return found;
+	}
+
+	//pairs get special treatment
 	if (v->type == VT_PAIR) {
 		//printf("pair found: ");
 		//println_value(v);
 		return eval_pair(e, v);
 	}
-
-	if (v->type == VT_SYMBOL) {
-		value *found = env_lookup(e, v->as.sym);
-		if (!found) {
-			printf("symbol %s not found\n", v->as.sym);
-			return cons(make_symbol("quote"),
-				cons(v, make_nil())); //TODO: return error
-		}
-		return found;
-	}
-
+	
+	// strings and errors etc do not get evaluated further
 	return v;
 }
 
@@ -248,7 +266,7 @@ value *eval_pair(env *e, value *v) {
 		if (defname->type != VT_SYMBOL) {
 			printf("error, expected symbol, found: ");
 			println_value(defname);
-			return make_nil();
+			return make_error("error, expected symbol, found: ");
 		}
 		env_define(e, defname->as.sym, defval);
 		return defval;
@@ -270,7 +288,6 @@ value *eval_pair(env *e, value *v) {
 		} else {
 			return eval(e, car(cdr(cdr(tail))));
 		}
-		return make_nil();
 	}
 
 	if (head->type == VT_SYMBOL && !strcmp(head->as.sym, "print")) {
@@ -301,7 +318,7 @@ value *apply(value *lval, value *args) {
 
 	if (lval->type != VT_LAMBDA) {
 		//ERROR
-		return make_nil();
+		return make_error("not a lambda: ");
 	}
 
 	env *sub_env = env_create(lval->as.lambda.env);
@@ -323,9 +340,9 @@ value *apply(value *lval, value *args) {
 		if (arg->type == VT_PAIR && result->type == VT_LAMBDA) {
 			return apply(result, arg);
 		}
-		// if arguments left but result is not a lambda, explicitely return false TODO: return an error
+
 		if (arg->type == VT_PAIR) {
-			return make_nil();
+			return make_error("not a lambda: ");
 		}
 		return result;
 	}
@@ -340,7 +357,7 @@ value *procedure_load_module(env *e, value *args) {
 	if (fst_arg->type != VT_STRING) {
 		printf("error: not a string:");
 		print_value(fst_arg);
-		return make_nil(); //TODO: make_err
+		return make_error("not a string: ");
 	}
 
 	const char *path = fst_arg->as.str;
@@ -348,14 +365,14 @@ value *procedure_load_module(env *e, value *args) {
 	void *handle = dlopen(path, RTLD_LAZY);
 	if (!handle) {
 		printf("dlopen error: %s\n", dlerror());
-		return make_nil(); //TODO: make_err
+		return make_error("dlopen error: ");
 	}
 
 	module_export *(*init)(void) = dlsym(handle, "module_init");
 
 	if (!init) {
 		printf("not a valid module: %s\n", dlerror());
-		return make_nil(); //TODO: make_err
+		return make_error("not a valid module: ");
 	}
 
 	module_export *exports = init();

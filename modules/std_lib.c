@@ -78,7 +78,7 @@ value *apply_to_nums(env *e, value *args, double (*fn)(double, double)) {
 	} else {
 		printf("not a number: ");
 		println_value(v);
-		return make_nil();
+		return make_error("not a number: ");
 	}
 
 	args = cdr(args);
@@ -91,7 +91,7 @@ value *apply_to_nums(env *e, value *args, double (*fn)(double, double)) {
 		} else {
 			printf("not a number: ");
 			println_value(v);
-			return make_nil();
+			return make_error("not a number: ");
 		}
 		args = cdr(args);
 	}
@@ -133,7 +133,7 @@ value *procedure_lt(env *e, value *args) {
 	} else {
 		printf("not a number: ");
 		println_value(v);
-		return make_nil();
+		return make_error("not a number: ");
 	}
 
 	args = cdr(args);
@@ -147,7 +147,7 @@ value *procedure_lt(env *e, value *args) {
 		} else {
 			printf("not a number: ");
 			println_value(v);
-			return make_nil();
+			return make_error("not a number: ");
 		}
 		if(prev_num >= cur_num) {
 			return make_nil();

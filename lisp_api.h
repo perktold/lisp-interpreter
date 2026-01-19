@@ -17,7 +17,8 @@ typedef enum {
 	VT_NIL,
 	VT_PAIR,
 	VT_LAMBDA,
-	VT_PROCEDURE
+	VT_PROCEDURE,
+	VT_ERROR
 } val_type;
 
 struct value {
@@ -27,6 +28,7 @@ struct value {
 		double d;
 		const char *sym;
 		const char *str;
+		const char *err;
 		struct {
 			value *car;
 			value *cdr;
@@ -49,6 +51,7 @@ value *make_string(const char *str);
 value *make_nil();
 value *make_lambda(env *e, value *params, value *body);
 value *make_procedure(value *(*fn) (env *, value *));
+value *make_error(const char *str);
 value *cons(value *car, value *cdr);
 value *car(value *cons);
 value *cdr(value *cons);
