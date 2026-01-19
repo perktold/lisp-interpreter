@@ -158,10 +158,15 @@ value *procedure_lt(env *e, value *args) {
 	return make_int(1);
 }
 
+value *procedure_list(env *e, value *args) {
+	return eval(e, args);
+}
+
+
 module_export *module_init() {
 	//exports[i].name = "xxx"
 	//exports[i].v = make_procedure(xxx);
-	static module_export exports[12];
+	static module_export exports[13];
 
 	exports[0].name = "cons";
 	exports[0].v = make_procedure(procedure_cons);
@@ -185,9 +190,11 @@ module_export *module_init() {
 	exports[9].v = make_procedure(procedure_div);
 	exports[10].name = "<";
 	exports[10].v = make_procedure(procedure_lt);
+	exports[11].name = "list";
+	exports[11].v = make_procedure(procedure_list);
 
-	exports[11].name = NULL;
-	exports[11].v    = NULL;
+	exports[12].name = NULL;
+	exports[12].v    = NULL;
 
 	return exports;
 }
