@@ -22,6 +22,7 @@ value *procedure_reverse(env *e, value *args) {
 
 value *procedure_isnull(env *e, value *args) {
 	value *v = eval(e, car(args));
+	v = force_thunk(v); 
 	if(v->type == VT_NIL) {
 		return make_int(1);
 	}
@@ -29,6 +30,8 @@ value *procedure_isnull(env *e, value *args) {
 }
 
 int value_eq(value *a, value *b) {
+	a = force_thunk(a); 
+	b = force_thunk(b); 
 	if(a->type != b->type){
 		return 0;
 	}
@@ -54,10 +57,12 @@ int value_eq(value *a, value *b) {
 
 value *procedure_equal(env *e, value *args) {
 	value *v_prev = eval(e, car(args));
+	v_prev = force_thunk(v_prev); 
 
 	args = cdr(args);
 	while (args->type == VT_PAIR) {
 		value *v_cur = eval(e, car(args));
+		v_cur = force_thunk(v_cur); 
 		if (!value_eq(v_prev, v_cur)) {
 			return make_nil();
 		}
@@ -71,6 +76,7 @@ value *procedure_equal(env *e, value *args) {
 value *apply_to_nums(env *e, value *args, double (*fn)(double, double)) {
 	double result;
 	value *v = eval(e, car(args));
+	v = force_thunk(v);
 	if (v->type == VT_INT) {
 		result = v->as.i;
 	} else if (v->type == VT_DOUBLE) {
@@ -125,6 +131,7 @@ value *procedure_div(env *e, value *args) {
 value *procedure_lt(env *e, value *args) {
 	double prev_num;
 	value *v = eval(e, car(args));
+	v = force_thunk(v);
 
 	if (v->type == VT_INT) {
 		prev_num = v->as.i;

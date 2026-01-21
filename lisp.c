@@ -69,6 +69,43 @@ value *make_error(const char *s) {
 	return val;
 }
 
+value *make_thunk(env *e, value *expr) {
+	// don't thunk self-evaluating expressions
+	if (expr->type == VT_INT || 
+            expr->type == VT_DOUBLE || 
+            expr->type == VT_STRING ||
+            expr->type == VT_NIL) {
+		return expr;
+	}
+
+	value *val = malloc(sizeof(value));
+	val->type = VT_THUNK;
+	val->as.thunk.expr = expr;
+	val->as.thunk.cached = NULL;
+	val->as.thunk.env = e;
+	return val;
+}
+
+value *force_thunk(value *v) {
+	if(v->type != VT_THUNK) {
+		return v;
+	}
+	if(v->as.thunk.cached) {
+		printf("\nDEBUG: thunk ");
+		print_value(v->as.thunk.expr);
+		printf(" was already cached as: ");
+		println_value(v->as.thunk.cached);
+		return v->as.thunk.cached;
+	}
+	printf("\nDEBUG: thunk ");
+	print_value(v->as.thunk.expr);
+	printf(" is now cached as: ");
+	println_value(v->as.thunk.cached);
+	
+	v->as.thunk.cached = eval(v->as.thunk.env, v->as.thunk.expr);
+	return v;
+}
+
 value *cons(value *car, value *cdr) {
 	value *val = malloc(sizeof(value));
 	val->type = VT_PAIR;
@@ -170,9 +207,13 @@ void print_value(value *val) {
 		case VT_ERROR:
 			printf("(error \"%s\")", val->as.err);
 			break;
+
+		case VT_THUNK:
+			print_value(force_thunk(val));
+			break;
 		default:
-			fprintf(stderr, "<unknown>[as str:%s][as f:%f][as int:%d]\n", val->as.str, val->as.d, val->as.i);
-			fprintf(stderr, "<unknown>[as pair: (%s . %s)\n", val->as.pair.car, val->as.pair.cdr);
+			printf("\n<unknown>[as str:%s][as f:%f][as int:%d]\n", val->as.str, val->as.d, val->as.i);
+			printf("<unknown>[as pair: (%s . %s)\n", val->as.pair.car, val->as.pair.cdr);
 			break;
 	}
 }
@@ -236,7 +277,7 @@ value *eval(env *e, value *v) {
 			return make_error("symbol not found");
 			///return list(make_symbol("quote"), v); //TODO: return error
 		}
-		return found;
+		return force_thunk(found);
 	}
 
 	//pairs get special treatment
@@ -254,6 +295,7 @@ value *eval_pair(env *e, value *v) {
 	value *head = car(v);
 	value *tail = cdr(v);
 
+	// special forms
 	if (head->type == VT_SYMBOL && !strcmp(head->as.sym, "quote")) {
 		return car(tail);
 	}
@@ -282,7 +324,7 @@ value *eval_pair(env *e, value *v) {
 	}
 
 	if (head->type == VT_SYMBOL && !strcmp(head->as.sym, "if")) {
-		value *test = eval(e, car(tail));
+		value *test = force_thunk(eval(e, car(tail)));
 		if(test->type != VT_NIL) {
 			return eval(e, car(cdr(tail)));
 		} else {
@@ -296,18 +338,18 @@ value *eval_pair(env *e, value *v) {
 		return v;
 	}
 
-	value *head_eval = eval(e, head);
+	value *head_eval = force_thunk(eval(e, head));
 	if (head_eval->type == VT_PROCEDURE) {
 		return head_eval->as.procedure.fn(e, tail);
 	}
 
 	if (head_eval->type == VT_LAMBDA) {
-		//evaluate arguments first, then apply
-		value *args_eval = make_nil();
+		//wrap arguments as thunks
+		value *args_thunks = make_nil();
 		for(value *a = tail; a->type == VT_PAIR; a = cdr(a)) {
-			args_eval = cons(eval(e, car(a)), args_eval);
+			args_thunks = cons(make_thunk(e, car(a)), args_thunks);
 		}
-		return apply(head_eval, reverse(args_eval));
+		return apply(head_eval, reverse(args_thunks));
 	}
 	
 	// else evaluate the list recursively

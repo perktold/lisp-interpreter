@@ -18,7 +18,8 @@ typedef enum {
 	VT_PAIR,
 	VT_LAMBDA,
 	VT_PROCEDURE,
-	VT_ERROR
+	VT_ERROR,
+	VT_THUNK
 } val_type;
 
 struct value {
@@ -41,6 +42,11 @@ struct value {
 		struct {
 			value *(*fn) (env *, value *);
 		} procedure;
+		struct {
+			value *expr;
+			value *cached;
+			env *env;
+		} thunk;
 	} as;
 };
 
@@ -52,6 +58,8 @@ value *make_nil();
 value *make_lambda(env *e, value *params, value *body);
 value *make_procedure(value *(*fn) (env *, value *));
 value *make_error(const char *str);
+value *make_thunk(env *e, value *expr);
+value *force_thunk(value *v);
 value *cons(value *car, value *cdr);
 value *car(value *cons);
 value *cdr(value *cons);
