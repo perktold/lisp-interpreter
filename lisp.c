@@ -91,16 +91,8 @@ value *force_thunk(value *v) {
 		return v;
 	}
 	if(v->as.thunk.cached) {
-		printf("\nDEBUG: thunk ");
-		print_value(v->as.thunk.expr);
-		printf(" was already cached as: ");
-		println_value(v->as.thunk.cached);
 		return v->as.thunk.cached;
 	}
-	printf("\nDEBUG: thunk ");
-	print_value(v->as.thunk.expr);
-	printf(" is now cached as: ");
-	println_value(v->as.thunk.cached);
 	
 	v->as.thunk.cached = eval(v->as.thunk.env, v->as.thunk.expr);
 	return v;
@@ -169,22 +161,21 @@ void print_value(value *val) {
 			break;
 
 		case VT_PAIR:
-			// DOTTED:
-			//printf("(");
-			//print_value(val->as.pair.car);
-			//printf(" . ");
-			//print_value(val->as.pair.cdr);
-			//printf(")");
-			
-			// LISTS:
 			printf("(");
-			print_value(car(val));
+			print_value(force_thunk(car(val)));
 			value *p_cdr = cdr(val);
-			while (p_cdr->type == VT_PAIR) {
+			while (p_cdr->type == VT_PAIR || p_cdr->type == VT_THUNK) {
+				while (p_cdr->type == VT_THUNK) {
+					p_cdr = force_thunk(p_cdr);
+				}
+				if (p_cdr->type != VT_PAIR) {
+					break;
+				}
 				printf(" ");
 				print_value(car(p_cdr));
 				p_cdr = cdr(p_cdr);
 			}
+
 			if(p_cdr->type != VT_NIL) {
 				printf(" . ");
 				print_value(p_cdr);

@@ -5,15 +5,23 @@
 
 value *procedure_cons(env *e, value *args) {
 	value *v = eval(e, car(args));
-	return cons(v, eval(e, car(cdr(args))));
+	return cons(v, make_thunk(e, car(cdr(args))));
 }
 
 value *procedure_car(env *e, value *args) {
-	return car(eval(e, car(args)));
+	value *v = eval(e, car(args));
+	while (v->type == VT_THUNK) {
+		v = force_thunk(v);
+	}
+	return car(v);
 }
 
 value *procedure_cdr(env *e, value *args) {
-	return cdr(eval(e, car(args)));
+	value *v = eval(e, car(args));
+	while (v->type == VT_THUNK) {
+		v = force_thunk(v);
+	}
+	return cdr(v);
 }
 
 value *procedure_reverse(env *e, value *args) {
