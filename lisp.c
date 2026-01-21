@@ -94,8 +94,10 @@ value *force_thunk(value *v) {
 		return v->as.thunk.cached;
 	}
 	
-	v->as.thunk.cached = eval(v->as.thunk.env, v->as.thunk.expr);
-	return v;
+	value *evaled = eval(v->as.thunk.env, v->as.thunk.expr);
+	force_thunk(evaled);
+	v->as.thunk.cached = evaled;
+	return evaled;
 }
 
 value *cons(value *car, value *cdr) {
@@ -164,16 +166,12 @@ void print_value(value *val) {
 			printf("(");
 			print_value(force_thunk(car(val)));
 			value *p_cdr = cdr(val);
+			p_cdr = force_thunk(p_cdr);
 			while (p_cdr->type == VT_PAIR || p_cdr->type == VT_THUNK) {
-				while (p_cdr->type == VT_THUNK) {
-					p_cdr = force_thunk(p_cdr);
-				}
-				if (p_cdr->type != VT_PAIR) {
-					break;
-				}
 				printf(" ");
 				print_value(car(p_cdr));
 				p_cdr = cdr(p_cdr);
+				p_cdr = force_thunk(p_cdr);
 			}
 
 			if(p_cdr->type != VT_NIL) {
@@ -251,10 +249,6 @@ value *env_lookup(env *e, const char *sym) {
 }
 
 value *eval(env *e, value *v) {
-	//printf("evaluating: ");
-	//print_value(v);
-	//printf("\n");
-	
 	//nil evaluates to itself
 	if (!v || v->type == VT_NIL) {
 		return make_nil();
@@ -273,12 +267,11 @@ value *eval(env *e, value *v) {
 
 	//pairs get special treatment
 	if (v->type == VT_PAIR) {
-		//printf("pair found: ");
-		//println_value(v);
 		return eval_pair(e, v);
 	}
 	
-	// strings and errors etc do not get evaluated further
+	// strings and errors etc do not get evaluated further, thunks get forced
+	v = force_thunk(v);
 	return v;
 }
 

@@ -1,6 +1,7 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "lisp_api.h"
 #include "lisp.h"
 
@@ -9,9 +10,14 @@ int yyerror(const char *s);
 
 void eval_and_print_REPL(value *v) {
         if(!v) { return; }
-        value *ve = eval(global_env, v);
+        if (v->type == VT_PAIR && car(v)->type == VT_SYMBOL && !strcmp(car(v)->as.sym, "define")) {
+              eval(global_env, v);
+              printf(";> defined ");
+              println_value(car(cdr(v)));
+              return;  // Skip printing for define so infinite lists do not eval
+        }
         printf(";> ");
-        println_value(ve);
+        println_value(eval(global_env, v));
 }
 %}
 
