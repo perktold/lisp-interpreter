@@ -182,11 +182,16 @@ void print_value(value *val) {
 			break;
 
 		case VT_LAMBDA:
-			printf("(λ ");
-			print_value(val->as.lambda.params);
-			printf(" ");
-			print_value(val->as.lambda.body);
-			printf(")");
+			print_value(
+				cons(make_symbol("λ"),
+					cons(val->as.lambda.params, val->as.lambda.body)
+				)
+			);
+			//printf("(λ ");
+			//print_value(val->as.lambda.params);
+			//printf(" ");
+			//print_value(car(val->as.lambda.body));
+			//printf(")");
 			break;
 
 		case VT_PROCEDURE:
@@ -302,7 +307,7 @@ value *eval_pair(env *e, value *v) {
 					!strcmp(head->as.sym, "\\") ||
 					!strcmp(head->as.sym, "λ"))) {
 		value *params = car(tail);
-		value *body = car(cdr(tail));
+		value *body = cdr(tail);
 
 		return make_lambda(e, params, body);
 	}
@@ -358,9 +363,15 @@ value *apply(value *lval, value *args) {
 		arg = cdr(arg);
 	}
 
-	// all lambda parameters bound to respective args
+	// are all lambda parameters bound to respective args?
 	if (params->type == VT_NIL) {
-		value *result = eval(sub_env, lval->as.lambda.body);
+		value *lbody = lval->as.lambda.body;
+		value *result = make_nil();
+
+		while (lbody->type == VT_PAIR) {
+			result = eval(sub_env, car(lbody));
+			lbody = cdr(lbody);
+		}
 
 		// if arguments left, try applying them to evaluated lambda
 		if (arg->type == VT_PAIR && result->type == VT_LAMBDA) {

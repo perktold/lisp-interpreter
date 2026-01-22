@@ -16,8 +16,9 @@ void eval_and_print_REPL(value *v) {
               println_value(car(cdr(v)));
               return;  // Skip printing for define so infinite lists do not eval
         }
+        value *evaled = eval(global_env, v);
         printf(";> ");
-        println_value(eval(global_env, v));
+        println_value(evaled);
 }
 %}
 
