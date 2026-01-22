@@ -387,8 +387,9 @@ void test_eq_symbols() {
 
 	value *expr =
 		cons(make_symbol("equal?"),
-			cons(make_symbol("foo"),
-				cons(make_symbol("foo"), make_nil())
+			cons(cons(make_symbol("quote"), cons(make_symbol("foo"), make_nil())),
+				cons(cons(make_symbol("quote"), cons(make_symbol("foo"), make_nil())),
+				make_nil())
 			)
 		);
 

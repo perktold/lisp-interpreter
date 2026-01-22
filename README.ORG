@@ -7,3 +7,4 @@ using lex and yacc
 + [[https://www.bowaggoner.com/writeups/jumpstart/flexbison/jumpstart_flexbison.pdf?utm_source][flex / bison jumpstart]]
 + [[https://github.com/Robert-van-Engelen/tinylisp/blob/main/tinylisp.pdf][tinylisp.pdf]]
 + [[https://w3.pppl.gov/info/readline/A_Short_Completion_Example.html][pppl.gov readline]]
++ [[https://web.mit.edu/6.001/6.037/sicp.pdf][SICP]]
