@@ -540,57 +540,697 @@ void test_lt_chain() {
 	ASSERT(r->as.i == 1, "< works as chain comparison");
 }
 
+
+void test_partial_application_single_arg() {
+	// ((lambda (x y) (+ x y)) 5) should return a lambda expecting y
+	env *e = env_create(NULL);
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+
+	value *expr =
+		cons(
+			cons(make_symbol("lambda"),
+				cons(
+					cons(make_symbol("x"),
+						cons(make_symbol("y"), make_nil())
+					),
+					cons(
+						cons(make_symbol("+"),
+							cons(make_symbol("x"),
+								cons(make_symbol("y"), make_nil())
+							)
+						),
+						make_nil()
+					)
+				)
+			),
+			cons(make_int(5), make_nil())
+		);
+
+	value *r = eval(e, expr);
+	ASSERT(r->type == VT_LAMBDA, "partial application returns lambda");
+}
+
+void test_partial_application_then_complete() {
+	// (((lambda (x y z) (+ x y z)) 1 2) 3)
+	env *e = env_create(NULL);
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+
+	value *expr =
+		cons(
+			cons(
+				cons(make_symbol("lambda"),
+					cons(
+						cons(make_symbol("x"),
+							cons(make_symbol("y"),
+								cons(make_symbol("z"), make_nil())
+							)
+						),
+						cons(
+							cons(make_symbol("+"),
+								cons(make_symbol("x"),
+									cons(make_symbol("y"),
+										cons(make_symbol("z"), make_nil())
+									)
+								)
+							),
+							make_nil()
+						)
+					)
+				),
+				cons(make_int(1),
+					cons(make_int(2), make_nil())
+				)
+			),
+			cons(make_int(3), make_nil())
+		);
+
+	value *r = eval(e, expr);
+	ASSERT(r->as.i == 6, "partial application can be completed");
+}
+
+// ============================================================================
+// CURRYING TESTS
+// ============================================================================
+
+void test_currying_manual() {
+	// (((lambda (x) (lambda (y) (lambda (z) (+ x (+ y z))))) 1) 2) 3)
+	env *e = env_create(NULL);
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+
+	value *expr =
+		cons(
+			cons(
+				cons(
+					cons(make_symbol("lambda"),
+						cons(
+							cons(make_symbol("x"), make_nil()),
+							cons(
+								cons(make_symbol("lambda"),
+									cons(
+										cons(make_symbol("y"), make_nil()),
+										cons(
+											cons(make_symbol("lambda"),
+												cons(
+													cons(make_symbol("z"), make_nil()),
+													cons(
+														cons(make_symbol("+"),
+															cons(make_symbol("x"),
+																cons(
+																	cons(make_symbol("+"),
+																		cons(make_symbol("y"),
+																			cons(make_symbol("z"), make_nil())
+																		)
+																	),
+																	make_nil()
+																)
+															)
+														),
+														make_nil()
+													)
+												)
+											),
+											make_nil()
+										)
+									)
+								),
+								make_nil()
+							)
+						)
+					),
+					cons(make_int(1), make_nil())
+				),
+				cons(make_int(2), make_nil())
+			),
+			cons(make_int(3), make_nil())
+		);
+
+	value *r = eval(e, expr);
+	ASSERT(r->as.i == 6, "curried functions work correctly");
+}
+
+void test_currying_with_define() {
+	// (define add (lambda (x) (lambda (y) (+ x y))))
+	// ((add 10) 5)
+	env *e = env_create(NULL);
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+
+	value *def =
+		cons(make_symbol("define"),
+			cons(make_symbol("add"),
+				cons(
+					cons(make_symbol("lambda"),
+						cons(
+							cons(make_symbol("x"), make_nil()),
+							cons(
+								cons(make_symbol("lambda"),
+									cons(
+										cons(make_symbol("y"), make_nil()),
+										cons(
+											cons(make_symbol("+"),
+												cons(make_symbol("x"),
+													cons(make_symbol("y"), make_nil())
+												)
+											),
+											make_nil()
+										)
+									)
+								),
+								make_nil()
+							)
+						)
+					),
+					make_nil()
+				)
+			)
+		);
+
+	eval(e, def);
+
+	value *call =
+		cons(
+			cons(make_symbol("add"),
+				cons(make_int(10), make_nil())
+			),
+			cons(make_int(5), make_nil())
+		);
+
+	value *r = eval(e, call);
+	ASSERT(r->as.i == 15, "curried functions can be defined and called");
+}
+
+// ============================================================================
+// LAZY EVALUATION / THUNK TESTS
+// ============================================================================
+
+void test_lazy_list_construction() {
+	// Test that cdr of cons is not eagerly evaluated
+	env *e = env_create(NULL);
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+
+	// (car (cons 1 (cons 2 undefined-symbol)))
+	// This should work because cdr is lazy
+	value *expr =
+		cons(make_symbol("car"),
+			cons(
+				cons(make_symbol("cons"),
+					cons(make_int(1),
+						cons(
+							cons(make_symbol("cons"),
+								cons(make_int(2),
+									cons(make_symbol("undefined-here"), make_nil())
+								)
+							),
+							make_nil()
+						)
+					)
+				),
+				make_nil()
+			)
+		);
+
+	value *r = eval(e, expr);
+	ASSERT(r->as.i == 1, "lazy evaluation prevents evaluation of unused cdr");
+}
+
+void test_thunk_caching() {
+	// Define a function that prints when called, then use it in a lazy context
+	// to verify thunks cache their results
+	env *e = env_create(NULL);
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+
+	// (define x (cons 1 (cons 2 (cons 3 ()))))
+	value *list_def =
+		cons(make_symbol("define"),
+			cons(make_symbol("x"),
+				cons(
+					cons(make_symbol("cons"),
+						cons(make_int(1),
+							cons(
+								cons(make_symbol("cons"),
+									cons(make_int(2),
+										cons(
+											cons(make_symbol("cons"),
+												cons(make_int(3),
+													cons(make_nil(), make_nil())
+												)
+											),
+											make_nil()
+										)
+									)
+								),
+								make_nil()
+							)
+						)
+					),
+					make_nil()
+				)
+			)
+		);
+
+	eval(e, list_def);
+
+	// (car (cdr x))
+	value *expr =
+		cons(make_symbol("car"),
+			cons(
+				cons(make_symbol("cdr"),
+					cons(make_symbol("x"), make_nil())
+				),
+				make_nil()
+			)
+		);
+
+	value *r = eval(e, expr);
+	ASSERT(r->as.i == 2, "lazy evaluation with thunks works");
+}
+
+// ============================================================================
+// SCOPING TESTS
+// ============================================================================
+
+void test_lexical_scoping_shadowing() {
+	// (define x 1)
+	// (define f (lambda (x) x))
+	// (f 99) should return 99, not 1
+	env *e = env_create(NULL);
+
+	env_define(e, "x", make_int(1));
+
+	value *f_def =
+		cons(make_symbol("define"),
+			cons(make_symbol("f"),
+				cons(
+					cons(make_symbol("lambda"),
+						cons(
+							cons(make_symbol("x"), make_nil()),
+							cons(make_symbol("x"), make_nil())
+						)
+					),
+					make_nil()
+				)
+			)
+		);
+
+	eval(e, f_def);
+
+	value *call =
+		cons(make_symbol("f"),
+			cons(make_int(99), make_nil())
+		);
+
+	value *r = eval(e, call);
+	value *outer_x = env_lookup(e, "x");
+
+	ASSERT(r->as.i == 99, "parameter shadows outer variable");
+	ASSERT(outer_x->as.i == 1, "outer variable unchanged by shadowing");
+}
+
+void test_closure_captures_environment() {
+	// (define make-adder (lambda (n) (lambda (x) (+ n x))))
+	// (define add5 (make-adder 5))
+	// (add5 10) should return 15
+	env *e = env_create(NULL);
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+
+	value *maker_def =
+		cons(make_symbol("define"),
+			cons(make_symbol("make-adder"),
+				cons(
+					cons(make_symbol("lambda"),
+						cons(
+							cons(make_symbol("n"), make_nil()),
+							cons(
+								cons(make_symbol("lambda"),
+									cons(
+										cons(make_symbol("x"), make_nil()),
+										cons(
+											cons(make_symbol("+"),
+												cons(make_symbol("n"),
+													cons(make_symbol("x"), make_nil())
+												)
+											),
+											make_nil()
+										)
+									)
+								),
+								make_nil()
+							)
+						)
+					),
+					make_nil()
+				)
+			)
+		);
+
+	eval(e, maker_def);
+
+	value *add5_def =
+		cons(make_symbol("define"),
+			cons(make_symbol("add5"),
+				cons(
+					cons(make_symbol("make-adder"),
+						cons(make_int(5), make_nil())
+					),
+					make_nil()
+				)
+			)
+		);
+
+	eval(e, add5_def);
+
+	value *call =
+		cons(make_symbol("add5"),
+			cons(make_int(10), make_nil())
+		);
+
+	value *r = eval(e, call);
+	ASSERT(r->as.i == 15, "closure captures and preserves environment");
+}
+
+// ============================================================================
+// QUOTE TESTS
+// ============================================================================
+
+void test_quote_prevents_evaluation() {
+	env *e = env_create(NULL);
+
+	// (quote (+ 1 2)) should return the list, not 3
+	value *expr =
+		cons(make_symbol("quote"),
+			cons(
+				cons(make_symbol("+"),
+					cons(make_int(1),
+						cons(make_int(2), make_nil())
+					)
+				),
+				make_nil()
+			)
+		);
+
+	value *r = eval(e, expr);
+	ASSERT(r->type == VT_PAIR, "quote returns unevaluated pair");
+	ASSERT(car(r)->type == VT_SYMBOL, "quote preserves symbols");
+	ASSERT(!strcmp(car(r)->as.sym, "+"), "quote preserves symbol value");
+}
+
+void test_quote_with_tick_syntax() {
+	env *e = env_create(NULL);
+
+	// Parse '(1 2 3) which becomes (quote (1 2 3))
+	value *quoted_list =
+		cons(make_symbol("quote"),
+			cons(
+				cons(make_int(1),
+					cons(make_int(2),
+						cons(make_int(3), make_nil())
+					)
+				),
+				make_nil()
+			)
+		);
+
+	value *r = eval(e, quoted_list);
+	ASSERT(r->type == VT_PAIR, "quoted list is a pair");
+	ASSERT(car(r)->as.i == 1, "quoted list preserves first element");
+}
+
+// ============================================================================
+// DOUBLE TYPE TESTS
+// ============================================================================
+
+void test_double_arithmetic() {
+	env *e = env_create(NULL);
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+
+	// (+ 1.5 2.5)
+	value *expr =
+		cons(make_symbol("+"),
+			cons(make_double(1.5),
+				cons(make_double(2.5), make_nil())
+			)
+		);
+
+	value *r = eval(e, expr);
+	ASSERT(r->type == VT_INT, "4.0 is represented as int");
+	ASSERT(r->as.i == 4, "double arithmetic works");
+}
+
+void test_mixed_int_double_arithmetic() {
+	env *e = env_create(NULL);
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+
+	// (+ 1 2.5)
+	value *expr =
+		cons(make_symbol("+"),
+			cons(make_int(1),
+				cons(make_double(2.5), make_nil())
+			)
+		);
+
+	value *r = eval(e, expr);
+	ASSERT(r->type == VT_DOUBLE, "mixed arithmetic returns double");
+	ASSERT(r->as.d == 3.5, "mixed int/double arithmetic works");
+}
+
+// ============================================================================
+// STRING TESTS
+// ============================================================================
+
+void test_string_equality() {
+	env *e = env_create(NULL);
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+
+	value *expr =
+		cons(make_symbol("equal?"),
+			cons(make_string("hello"),
+				cons(make_string("hello"), make_nil())
+			)
+		);
+
+	value *r = eval(e, expr);
+	ASSERT(r->as.i == 1, "string equality works");
+}
+
+void test_string_inequality() {
+	env *e = env_create(NULL);
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+
+	value *expr =
+		cons(make_symbol("equal?"),
+			cons(make_string("hello"),
+				cons(make_string("world"), make_nil())
+			)
+		);
+
+	value *r = eval(e, expr);
+	ASSERT(r->type == VT_NIL, "string inequality works");
+}
+
+// ============================================================================
+// LIST CONSTRUCTION TESTS
+// ============================================================================
+
+void test_list_function() {
+	env *e = env_create(NULL);
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+
+	// (list 1 2 3)
+	value *expr =
+		cons(make_symbol("list"),
+			cons(make_int(1),
+				cons(make_int(2),
+					cons(make_int(3), make_nil())
+				)
+			)
+		);
+
+	value *r = eval(e, expr);
+	ASSERT(r->type == VT_PAIR, "list creates a pair");
+	ASSERT(car(r)->as.i == 1, "list first element correct");
+	ASSERT(car(cdr(r))->as.i == 2, "list second element correct");
+	ASSERT(car(cdr(cdr(r)))->as.i == 3, "list third element correct");
+}
+
+// ============================================================================
+// REVERSE TESTS
+// ============================================================================
+
+void test_reverse_list() {
+	env *e = env_create(NULL);
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+
+	// (reverse (list 1 2 3))
+	value *expr =
+		cons(make_symbol("reverse"),
+			cons(
+				cons(make_symbol("list"),
+					cons(make_int(1),
+						cons(make_int(2),
+							cons(make_int(3), make_nil())
+						)
+					)
+				),
+				make_nil()
+			)
+		);
+
+	value *r = eval(e, expr);
+	ASSERT(car(r)->as.i == 3, "reverse first element correct");
+	ASSERT(car(cdr(r))->as.i == 2, "reverse second element correct");
+	ASSERT(car(cdr(cdr(r)))->as.i == 1, "reverse third element correct");
+}
+
+// ============================================================================
+// ARITHMETIC CHAIN TESTS
+// ============================================================================
+
+void test_subtraction_chain() {
+	env *e = env_create(NULL);
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+
+	// (- 10 3 2)
+	value *expr =
+		cons(make_symbol("-"),
+			cons(make_int(10),
+				cons(make_int(3),
+					cons(make_int(2), make_nil())
+				)
+			)
+		);
+
+	value *r = eval(e, expr);
+	ASSERT(r->as.i == 5, "subtraction chains correctly");
+}
+
+void test_multiplication_chain() {
+	env *e = env_create(NULL);
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+
+	// (* 2 3 4)
+	value *expr =
+		cons(make_symbol("*"),
+			cons(make_int(2),
+				cons(make_int(3),
+					cons(make_int(4), make_nil())
+				)
+			)
+		);
+
+	value *r = eval(e, expr);
+	ASSERT(r->as.i == 24, "multiplication chains correctly");
+}
+
+void test_division_chain() {
+	env *e = env_create(NULL);
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+
+	// (/ 24 2 3)
+	value *expr =
+		cons(make_symbol("/"),
+			cons(make_int(24),
+				cons(make_int(2),
+					cons(make_int(3), make_nil())
+				)
+			)
+		);
+
+	value *r = eval(e, expr);
+	ASSERT(r->as.i == 4, "division chains correctly");
+}
+
+// ============================================================================
+// ERROR HANDLING TESTS
+// ============================================================================
+
+void test_undefined_symbol_error() {
+	env *e = env_create(NULL);
+	value *sym = make_symbol("undefined-var");
+	value *r = eval(e, sym);
+	ASSERT(r->type == VT_ERROR, "undefined symbol returns error");
+}
+
+void test_car_of_non_pair_error() {
+	env *e = env_create(NULL);
+	procedure_load_module(e, cons(make_string("modules/std_lib.so"), make_nil()));
+
+	// (car 42)
+	value *expr =
+		cons(make_symbol("car"),
+			cons(make_int(42), make_nil())
+		);
+
+	value *r = eval(e, expr);
+	ASSERT(r->type == VT_ERROR, "car of non-pair returns error");
+}
+
 int main(void) {
-	printf("lol 1\n");
 	test_make_int();
-	printf("lol 2\n");
 	test_cons_car_cdr();
-	printf("lol 3\n");
 	test_env_define_lookup();
-	printf("lol 4\n");
 	test_env_parent_lookup();
-	printf("lol 5\n");
 	test_eval_literal();
-	printf("lol 6\n");
 	test_eval_symbol();
-	printf("lol 7\n");
 	test_define();
-	printf("lol 8\n");
 	test_lambda_identity();
-	printf("lol 9\n");
 	test_lambda_add();
-	printf("lol 10\n");
 	test_lambda_multiple_args();
-	printf("lol 11\n");
 	test_lambda_closure();
-	printf("lol 12\n");
 	test_nested_lambdas();
-	printf("lol 13\n");
 	test_lambda_does_not_modify_outer_env();
-	printf("lol 14\n");
 	test_recursive_factorial();
-	printf("lol 15\n");
 	test_eq_ints();
-	printf("lol 16\n");
 	test_eq_ints_false();
-	printf("lol 17\n");
 	test_eq_symbols();
-	printf("lol 18\n");
 	test_eq_lists();
-	printf("lol 19\n");
 	test_null_true();
-	printf("lol 20\n");
 	test_null_false();
-	printf("lol 21\n");
 	test_if_true();
-	printf("lol 22\n");
 	test_if_false();
-	printf("lol 23\n");
 	test_if_short_circuit();
-	printf("lol 24\n");
 	test_add_multiple_args();
-	printf("lol 25\n");
 	test_lt_chain();
+
+printf("=== PARTIAL APPLICATION TESTS ===\n");
+	test_partial_application_single_arg();
+	test_partial_application_then_complete();
+
+	printf("\n=== CURRYING TESTS ===\n");
+	test_currying_manual();
+	test_currying_with_define();
+
+	printf("\n=== LAZY EVALUATION TESTS ===\n");
+	test_lazy_list_construction();
+	test_thunk_caching();
+
+	printf("\n=== SCOPING TESTS ===\n");
+	test_lexical_scoping_shadowing();
+	test_closure_captures_environment();
+
+	printf("\n=== QUOTE TESTS ===\n");
+	test_quote_prevents_evaluation();
+	test_quote_with_tick_syntax();
+
+	printf("\n=== DOUBLE TYPE TESTS ===\n");
+	test_double_arithmetic();
+	test_mixed_int_double_arithmetic();
+
+	printf("\n=== STRING TESTS ===\n");
+	test_string_equality();
+	test_string_inequality();
+
+	printf("\n=== LIST TESTS ===\n");
+	test_list_function();
+	test_reverse_list();
+
+	printf("\n=== ARITHMETIC CHAIN TESTS ===\n");
+	test_subtraction_chain();
+	test_multiplication_chain();
+	test_division_chain();
+
+	printf("\n=== ERROR HANDLING TESTS ===\n");
+	test_undefined_symbol_error();
+	test_car_of_non_pair_error();
+	
 
 	printf("\nTests run: %d\n", tests_run);
 	printf("Tests failed: %d\n", tests_failed);

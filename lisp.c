@@ -95,7 +95,7 @@ value *force_thunk(value *v) {
 	}
 	
 	value *evaled = eval(v->as.thunk.env, v->as.thunk.expr);
-	force_thunk(evaled);
+	evaled = force_thunk(evaled);
 	v->as.thunk.cached = evaled;
 	return evaled;
 }
@@ -292,7 +292,9 @@ value *eval_pair(env *e, value *v) {
 	if (head->type == VT_SYMBOL && !strcmp(head->as.sym, "define")) {
 		value *defargs = tail;
 		value *defname = car(defargs);
-		value *defval = eval(e, car(cdr(defargs)));
+
+		//define does not bind to evaluated arguemnts but is lazy
+		value *defval = make_thunk(e, car(cdr(defargs)));
 
 		if (defname->type != VT_SYMBOL) {
 			printf("error, expected symbol, found: ");
