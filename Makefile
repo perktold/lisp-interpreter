@@ -1,7 +1,7 @@
 LEX     = flex
 YACC    = bison
 CC      = gcc -g
-CFLAGS  = -DYYDEBUG=1 -fPIC
+CFLAGS  = -DYYDEBUG=1 -fPIC -rdynamic
 LIBS    = -lreadline -lfl -lm
 OBJS	= lisp.o lisp.tab.o lex.yy.o
 

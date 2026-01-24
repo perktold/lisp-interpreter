@@ -9,10 +9,14 @@
 #include "lex.yy.h"
 #include "lisp.tab.h"
 
+reg *global_reg = NULL;
+
 value *make_int(int i) {
 	value *val = malloc(sizeof(value));
 	val->type = VT_INT;
 	val->as.i = i;
+	val->reachable = 0;
+	reg_add(val);
 	return val;
 }
 
@@ -20,6 +24,8 @@ value *make_double(double d) {
 	value *val = malloc(sizeof(value));
 	val->type = VT_DOUBLE;
 	val->as.d = d;
+	val->reachable = 0;
+	reg_add(val);
 	return val;
 }
 
@@ -27,6 +33,8 @@ value *make_symbol(const char *s) {
 	value *val = malloc(sizeof(value));
 	val->type = VT_SYMBOL;
 	val->as.sym = strdup(s);
+	val->reachable = 0;
+	reg_add(val);
 	return val;
 }
 
@@ -34,6 +42,8 @@ value *make_string(const char *s) {
 	value *val = malloc(sizeof(value));
 	val->type = VT_STRING;
 	val->as.str = strdup(s);
+	val->reachable = 0;
+	reg_add(val);
 	return val;
 }
 
@@ -42,6 +52,9 @@ value *make_nil() {
 	if (!NIL) {
 		NIL = malloc(sizeof(value));
 		NIL->type = VT_NIL;
+		NIL->reachable = 1;
+		NIL->as.pair.car = NIL; //might be bogus
+		NIL->as.pair.cdr = NIL; //might be bogus
 	}
 	return NIL;
 }
@@ -52,6 +65,8 @@ value *make_lambda(env *e, value *params, value *body) {
 	l->as.lambda.params = params;
 	l->as.lambda.body = body;
 	l->as.lambda.env = e;
+	l->reachable = 0;
+	reg_add(l);
 	return l;
 }
 
@@ -59,6 +74,7 @@ value *make_procedure(value *(*fn) (env *, value *)) {
 	value *val = malloc(sizeof(value));
 	val->type = VT_PROCEDURE;
 	val->as.procedure.fn = fn;
+	reg_add(val);
 	return val;
 }
 
@@ -66,6 +82,7 @@ value *make_error(const char *s) {
 	value *val = malloc(sizeof(value));
 	val->type = VT_ERROR;
 	val->as.err = strdup(s);
+	reg_add(val);
 	return val;
 }
 
@@ -83,6 +100,7 @@ value *make_thunk(env *e, value *expr) {
 	val->as.thunk.expr = expr;
 	val->as.thunk.cached = NULL;
 	val->as.thunk.env = e;
+	reg_add(val);
 	return val;
 }
 
@@ -105,6 +123,7 @@ value *cons(value *car, value *cdr) {
 	val->type = VT_PAIR;
 	val->as.pair.car = car;
 	val->as.pair.cdr = cdr;
+	reg_add(val);
 	return val;
 }
 
@@ -128,7 +147,7 @@ value *cdr(value *cons) {
 
 value *reverse(value *list) {
 	value *reversed = make_nil();
-	for(value *a = list; a->type == VT_PAIR; a = cdr(a)) {
+	for (value *a = list; a->type == VT_PAIR; a = cdr(a)) {
 		reversed = cons(car(a), reversed);
 	}
 	return reversed;
@@ -195,7 +214,7 @@ void print_value(value *val) {
 			break;
 
 		case VT_PROCEDURE:
-			printf("<procedure>\n");
+			printf("<procedure>");
 			break;
 
 		case VT_ERROR:
@@ -424,4 +443,78 @@ value *procedure_load_module(env *e, value *args) {
 
 int is_integer(double x) {
 	return floor(x) == x && isfinite(x);
+}
+
+reg *reg_add(value *val) {
+	reg *new = malloc(sizeof(reg));
+	new->value = val;
+	new->next = global_reg;
+	global_reg = new;
+	return new;
+}
+
+int mark_val(value *val) {
+	if(!val) {
+		return 0;
+	}
+	//println_value(val);
+	switch (val->type) {
+		case VT_INT:
+		case VT_DOUBLE:
+		case VT_SYMBOL:
+		case VT_STRING:
+		case VT_ERROR:
+		case VT_PROCEDURE:
+			val->reachable = 1;
+			return 1;
+
+		case VT_PAIR:
+			printf("inside pair\n");
+			val->reachable = 1;
+			return 1 + mark_val(val->as.pair.car)
+			         + mark_val(val->as.pair.cdr);
+			break;
+
+		case VT_LAMBDA:
+			printf("test\n");
+			val->reachable = 1;
+			return 1 + mark_val(val->as.lambda.params)
+			         + mark_val(val->as.lambda.body);
+			         + mark_env(val->as.lambda.env);
+			break;
+
+		case VT_THUNK:
+			val->reachable = 1;
+			return 1 + mark_val(val->as.thunk.expr)
+			         + mark_val(val->as.thunk.cached);
+			         + mark_env(val->as.thunk.env);
+			break;
+
+		case VT_NIL:
+		default:
+			return 0;
+	}
+}
+
+int mark_env(env *envi) {
+	int count=0;
+	for (env *e = envi; e; e = e->next) {
+		if (e->value) {
+			count += mark_val(e->value);
+		}
+	}
+	printf("mark_env count: %d\n", count);
+	return count;
+}
+
+int sweep() {
+	for (reg *r = global_reg; r; r = r->next) {
+		if (r->value->reachable) {
+			printf("reachable:");
+			println_value(r->value);
+		} else {
+			printf("unreachable:");
+			println_value(r->value);
+		}
+	}
 }

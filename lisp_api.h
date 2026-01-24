@@ -48,6 +48,7 @@ struct value {
 			env *env;
 		} thunk;
 	} as;
+	int reachable;
 };
 
 value *make_int(int i);

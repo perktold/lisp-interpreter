@@ -92,6 +92,8 @@ void init_readline() {
 }
 
 int main(int argc, char **argv) {
+	// init global value register
+	global_reg = NULL;
 	// init global env
 	global_env = env_create(NULL);
 	env_define(global_env, "load_module", make_procedure(procedure_load_module));
@@ -139,6 +141,9 @@ int main(int argc, char **argv) {
 			prompt = "   ";
 		}
 		free(line);
+		int marked = mark_env(global_env); //maybe do this somewhere else?
+		printf("marked: %d\n", marked);
+		sweep();
 	}
 	return 0;
 }

@@ -8,3 +8,4 @@ using lex and yacc
 + [[https://github.com/Robert-van-Engelen/tinylisp/blob/main/tinylisp.pdf][tinylisp.pdf]]
 + [[https://w3.pppl.gov/info/readline/A_Short_Completion_Example.html][pppl.gov readline]]
 + [[https://web.mit.edu/6.001/6.037/sicp.pdf][SICP]]
++ [[https://www.youtube.com/watch?v=c32zXYAK7CI][Garbage Collection (Mark & Sweep) - Computerphile]]
