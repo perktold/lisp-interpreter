@@ -141,9 +141,10 @@ int main(int argc, char **argv) {
 			prompt = "   ";
 		}
 		free(line);
-		int marked = mark_env(global_env); //maybe do this somewhere else?
-		printf("marked: %d\n", marked);
+		reset_marks();
+		mark_env(global_env); //maybe do this somewhere else?
 		sweep();
+		print_register();
 	}
 	return 0;
 }

@@ -8,10 +8,11 @@ typedef struct reg reg;
 // environments, TODO: make this use hashtable
 // symbol->val
 typedef struct env {
-	const char *symbol;
+	char *symbol;
 	value *value;
 	env *next;
 	env *parent;
+	int marked;
 } env;
 
 env *env_create(env *parent);
@@ -31,10 +32,14 @@ typedef struct reg {
 } reg;
 
 reg *reg_add(value *val);
-void free_value(reg *r);
 extern reg *global_reg;
-int mark_env(env *e);
-int mark_val(value *v);
+void mark_env(env *e);
+void mark_val(value *v);
 int sweep();
+void free_env(env *e);
+void free_value(value *v);
+void reset_env_marks(env *e);
+void reset_marks();
+void print_register();
 
 #endif

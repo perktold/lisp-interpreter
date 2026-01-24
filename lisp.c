@@ -15,7 +15,7 @@ value *make_int(int i) {
 	value *val = malloc(sizeof(value));
 	val->type = VT_INT;
 	val->as.i = i;
-	val->reachable = 0;
+	val->marked = 0;
 	reg_add(val);
 	return val;
 }
@@ -24,7 +24,7 @@ value *make_double(double d) {
 	value *val = malloc(sizeof(value));
 	val->type = VT_DOUBLE;
 	val->as.d = d;
-	val->reachable = 0;
+	val->marked = 0;
 	reg_add(val);
 	return val;
 }
@@ -33,7 +33,7 @@ value *make_symbol(const char *s) {
 	value *val = malloc(sizeof(value));
 	val->type = VT_SYMBOL;
 	val->as.sym = strdup(s);
-	val->reachable = 0;
+	val->marked = 0;
 	reg_add(val);
 	return val;
 }
@@ -42,7 +42,7 @@ value *make_string(const char *s) {
 	value *val = malloc(sizeof(value));
 	val->type = VT_STRING;
 	val->as.str = strdup(s);
-	val->reachable = 0;
+	val->marked = 0;
 	reg_add(val);
 	return val;
 }
@@ -52,7 +52,7 @@ value *make_nil() {
 	if (!NIL) {
 		NIL = malloc(sizeof(value));
 		NIL->type = VT_NIL;
-		NIL->reachable = 1;
+		NIL->marked = 1;
 		NIL->as.pair.car = NIL; //might be bogus
 		NIL->as.pair.cdr = NIL; //might be bogus
 	}
@@ -65,7 +65,7 @@ value *make_lambda(env *e, value *params, value *body) {
 	l->as.lambda.params = params;
 	l->as.lambda.body = body;
 	l->as.lambda.env = e;
-	l->reachable = 0;
+	l->marked = 0;
 	reg_add(l);
 	return l;
 }
@@ -154,11 +154,17 @@ value *reverse(value *list) {
 }
 
 void println_value(value *val) {
-	print_value(val);
+	print_value(val, -1);
+	//print_value(val, 50);
 	printf("\n");
 }
 
-void print_value(value *val) {
+void println_value_shallow(value *val) {
+	print_value(val, 0);
+	printf("\n");
+}
+
+void print_value(value *val, int depth) {
 	if(!val) { return; }
 	switch (val->type) {
 		case VT_INT:
@@ -182,29 +188,38 @@ void print_value(value *val) {
 			break;
 
 		case VT_PAIR:
+			if (!depth) {
+				printf("<pair>");
+				return;
+			}
 			printf("(");
-			print_value(force_thunk(car(val)));
+			print_value(force_thunk(car(val)), depth-1);
 			value *p_cdr = cdr(val);
 			p_cdr = force_thunk(p_cdr);
 			while (p_cdr->type == VT_PAIR || p_cdr->type == VT_THUNK) {
 				printf(" ");
-				print_value(car(p_cdr));
+				print_value(car(p_cdr), depth-1);
 				p_cdr = cdr(p_cdr);
 				p_cdr = force_thunk(p_cdr);
 			}
 
 			if(p_cdr->type != VT_NIL) {
 				printf(" . ");
-				print_value(p_cdr);
+				print_value(p_cdr, depth-1);
 			}
 			printf(")");
 			break;
 
 		case VT_LAMBDA:
+			if (!depth) {
+				printf("<lambda>");
+				return;
+			}
 			print_value(
 				cons(make_symbol("λ"),
 					cons(val->as.lambda.params, val->as.lambda.body)
-				)
+				),
+				depth //idk mane
 			);
 			//printf("(λ ");
 			//print_value(val->as.lambda.params);
@@ -222,7 +237,11 @@ void print_value(value *val) {
 			break;
 
 		case VT_THUNK:
-			print_value(force_thunk(val));
+			if (!depth) {
+				printf("<thunk>");
+				return;
+			}
+			print_value(force_thunk(val), depth-1);
 			break;
 		default:
 			printf("\n<unknown>[as str:%s][as f:%f][as int:%d]\n", val->as.str, val->as.d, val->as.i);
@@ -414,7 +433,7 @@ value *procedure_load_module(env *e, value *args) {
 
 	if (fst_arg->type != VT_STRING) {
 		printf("error: not a string:");
-		print_value(fst_arg);
+		print_value(fst_arg, 3);
 		return make_error("not a string: ");
 	}
 
@@ -453,68 +472,134 @@ reg *reg_add(value *val) {
 	return new;
 }
 
-int mark_val(value *val) {
-	if(!val) {
-		return 0;
-	}
-	//println_value(val);
-	switch (val->type) {
-		case VT_INT:
-		case VT_DOUBLE:
-		case VT_SYMBOL:
-		case VT_STRING:
-		case VT_ERROR:
-		case VT_PROCEDURE:
-			val->reachable = 1;
-			return 1;
+void mark_val(value *val) {
+	if(!val || val->marked) { return; }
+	val->marked = 1;
 
+	switch (val->type) {
 		case VT_PAIR:
-			printf("inside pair\n");
-			val->reachable = 1;
-			return 1 + mark_val(val->as.pair.car)
-			         + mark_val(val->as.pair.cdr);
+			mark_val(val->as.pair.car);
+			mark_val(val->as.pair.cdr);
 			break;
 
 		case VT_LAMBDA:
-			printf("test\n");
-			val->reachable = 1;
-			return 1 + mark_val(val->as.lambda.params)
-			         + mark_val(val->as.lambda.body);
-			         + mark_env(val->as.lambda.env);
+			mark_val(val->as.lambda.params);
+			mark_val(val->as.lambda.body);
+			mark_env(val->as.lambda.env);
 			break;
 
 		case VT_THUNK:
-			val->reachable = 1;
-			return 1 + mark_val(val->as.thunk.expr)
-			         + mark_val(val->as.thunk.cached);
-			         + mark_env(val->as.thunk.env);
+			mark_val(val->as.thunk.expr);
+			mark_val(val->as.thunk.cached);
+			mark_env(val->as.thunk.env);
 			break;
-
-		case VT_NIL:
 		default:
-			return 0;
 	}
 }
 
-int mark_env(env *envi) {
-	int count=0;
-	for (env *e = envi; e; e = e->next) {
-		if (e->value) {
-			count += mark_val(e->value);
+void mark_env(env *e) {
+	if (!e || e->marked) { return; }
+	e->marked = 1;
+
+	for (env *cur = e; cur; cur = cur->next) {
+		if (cur->value) {
+			mark_val(cur->value);
 		}
 	}
-	printf("mark_env count: %d\n", count);
-	return count;
+	mark_env(e->parent);
+}
+
+void free_env(env *e) {
+	if (!e || !e->marked) { return; };
+
+	if(e->next) {
+		 free_env(e->next);
+	}
+	free(e->symbol);
+	//free_value(e->value);
+	free(e);
+}
+
+void free_value(value *val) {
+	if (!val || !val->marked) { return; };
+	if (val->type == VT_NIL) { return; };
+
+	switch (val->type) {
+		case VT_SYMBOL:
+			free(val->as.sym);
+			break;
+		case VT_STRING:
+			free(val->as.str);
+			break;
+		case VT_ERROR:
+			free(val->as.err);
+			break;
+		case VT_LAMBDA:
+			free_env(val->as.lambda.env);
+			break;
+		case VT_THUNK:
+			free_env(val->as.thunk.env);
+			break;
+		default:
+		break;
+	}
+	free(val);
 }
 
 int sweep() {
-	for (reg *r = global_reg; r; r = r->next) {
-		if (r->value->reachable) {
-			printf("reachable:");
-			println_value(r->value);
+	reg *r = global_reg;
+	reg *prev = NULL;
+
+	while (r) {
+		reg *next = r->next;
+
+		if (!r->value->marked) {
+			free_value(r->value);
+
+			if (prev) {
+				prev->next = next;
+			} else {
+				global_reg = next;
+			}
+			free(r);
 		} else {
-			printf("unreachable:");
-			println_value(r->value);
+			prev = r;
 		}
+		r = next;
+	}
+}
+
+void reset_env_marks(env *e) {
+	if (!e || !e->marked) return;
+	for (env *cur = e; cur; cur = cur->next) {
+		e->marked = 0;
+	}
+	reset_env_marks(e->parent);
+}
+
+void reset_marks() {
+	for (reg *r = global_reg; r; r = r->next) {
+		if (r->value) {
+			r->value->marked = 0;
+			switch (r->value->type) {
+				case VT_LAMBDA:
+					reset_env_marks(r->value->as.lambda.env);
+					break;
+
+				case VT_THUNK:
+					reset_env_marks(r->value->as.thunk.env);
+					break;
+				default:
+			}
+		}
+	}
+}
+
+void print_register() {
+	printf("DEBUG: printing register:\n");
+	reg *r = global_reg;
+	while (r) {
+		println_value(r->value);
+		r = r->next;
 	}
 }

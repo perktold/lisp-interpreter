@@ -6,7 +6,7 @@ typedef struct env env;
 
 value *eval(env *e, value *val);
 
-void print_value(value *val);
+void print_value(value *val, int depth);
 void println_value(value *val);
 
 typedef enum {
@@ -27,9 +27,9 @@ struct value {
 	union {
 		int i;
 		double d;
-		const char *sym;
-		const char *str;
-		const char *err;
+		char *sym;
+		char *str;
+		char *err;
 		struct {
 			value *car;
 			value *cdr;
@@ -48,7 +48,7 @@ struct value {
 			env *env;
 		} thunk;
 	} as;
-	int reachable;
+	int marked;
 };
 
 value *make_int(int i);
