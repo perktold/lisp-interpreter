@@ -499,9 +499,9 @@ void mark_val(value *val) {
 
 void mark_env(env *e) {
 	if (!e || e->marked) { return; }
-	e->marked = 1;
 
 	for (env *cur = e; cur; cur = cur->next) {
+		cur->marked = 1;
 		if (cur->value) {
 			mark_val(cur->value);
 		}
@@ -546,7 +546,7 @@ void free_value(value *val) {
 	free(val);
 }
 
-int sweep() {
+void sweep() {
 	reg *r = global_reg;
 	reg *prev = NULL;
 
@@ -578,6 +578,7 @@ void reset_env_marks(env *e) {
 }
 
 void reset_marks() {
+	reset_env_marks(global_env);
 	for (reg *r = global_reg; r; r = r->next) {
 		if (r->value) {
 			r->value->marked = 0;

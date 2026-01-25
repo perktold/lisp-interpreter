@@ -35,7 +35,7 @@ reg *reg_add(value *val);
 extern reg *global_reg;
 void mark_env(env *e);
 void mark_val(value *v);
-int sweep();
+void sweep();
 void free_env(env *e);
 void free_value(value *v);
 void reset_env_marks(env *e);

@@ -48,9 +48,9 @@ run_std: main
 modules: $(MODULE_SO)
 	@echo "All modules built successfully."
 
-modules/%.so: modules/%.c lisp.o
+modules/%.so: modules/%.c
 	gcc -fPIC -c $< -o $*.o
-	gcc -fPIC -shared $*.o lisp.o -o $@ $(MODULE_LIBS)
+	gcc -fPIC -shared $*.o -o $@ $(MODULE_LIBS)
 	rm $*.o
 
 .PHONY: clean test run
